@@ -1,5 +1,45 @@
 {
   "enabledMcpjsonServers": [
     "github"
-  ]
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git switch*)",
+      "Bash(git add*)",
+      "Bash(cd backend && uv run ruff*)",
+      "Bash(cd backend && uv run pytest*)",
+      "Bash(cd frontend && pnpm lint*)",
+      "Bash(cd frontend && pnpm check*)",
+      "Bash(cd frontend && pnpm build*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run pytest*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm check*)",
+      "Bash(pnpm build*)"
+    ],
+    "deny": [
+      "Bash(git push origin main*)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git push origin master*)",
+      "Read(./backend/.env)",
+      "Read(./frontend/.env)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.sh"
+          }
+        ]
+      }
+    ]
+  }
 }

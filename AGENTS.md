@@ -1,6 +1,18 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Product context
+
+Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉션을 팔로워 피드로 공유하는 웹 서비스 (데스크톱/모바일 반응형). 화면 6종: 로그인(Google) · 피드 · 장소 찾기 · 내 컬렉션 · 컬렉션 상세 · 팔로워. 요약은 `docs/product.md`, 원본은 Notion 기획안. 기능을 구현하기 전에 `docs/product.md`를 먼저 확인할 것. UI를 만들 때는 루트 `DESIGN.md`(디자인 시스템: 컬러/타이포/컴포넌트 토큰)를 따른다. 색·간격·라디우스는 하드코딩하지 말고 토큰(CSS 변수)으로 참조한다.
+
+## Git workflow (MUST follow)
+
+- **`main`에 직접 push/commit 금지.** 항상 `<type>/<short-name>` 브랜치(`feat/`, `fix/`, `chore/`, `docs/`)에서 작업하고 Pull Request로만 머지한다. `.claude/settings.json`의 deny 규칙이 `git push origin main`을 막는다.
+- PR은 사용자가 요청할 때만 만든다. 만들 때는 `.github/pull_request_template.md` 구조를 따른다.
+- PR 전에 확인: backend `uv run ruff check . && uv run pytest`, frontend `pnpm check && pnpm build`.
+- 커밋은 작고 목적이 하나인 단위로. `.env` 등 시크릿은 절대 커밋하지 않는다.
+- 사용자와의 대화와 문서(`docs/`)는 한국어, 코드·식별자·커밋 메시지는 영어.
 
 ## Project structure
 
