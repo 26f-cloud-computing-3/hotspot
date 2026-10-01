@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     google_maps_api_key: str = ""
 
+    # Supabase project URL, e.g. https://<ref>.supabase.co. Access tokens issued by
+    # Supabase Auth are verified against its JWKS; no shared secret is needed.
+    supabase_url: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
