@@ -1,4 +1,19 @@
 :root {
+  /* Design tokens mirrored from DESIGN.md */
+  --color-primary: #e60023;
+  --color-on-primary: #fff;
+  --color-primary-pressed: #cc001f;
+  --color-ink: #000;
+  --color-mute: #62625b;
+  --color-canvas: #fff;
+  --color-surface-soft: #fbfbf9;
+  --color-error: #9e0a0a;
+  --radius-md: 16px;
+  --radius-lg: 32px;
+  --space-xs: 6px;
+  --space-lg: 16px;
+  --space-xxl: 32px;
+
   color-scheme: light dark;
   font:
     16px / 1.5 system-ui,
