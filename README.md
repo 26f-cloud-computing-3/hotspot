@@ -1,6 +1,6 @@
 # 프로젝트 구조
 
-- `backend/` — FastAPI (Python, uv). REST API + `/mcp` MCP 엔드포인트를 같은 서버에서 제공.
+- `backend/` — FastAPI (Python, uv). REST API 제공.
 - `frontend/` — React + TypeScript (Vite, pnpm). 지도 SDK 연동 UI.
 
 ## 지도(Map) 연동
@@ -18,14 +18,6 @@ provider를 바꾸려면 `MAP_PROVIDER` 값만 바꾸면 되고, 각 provider �
 provider 추상화로 두었고, REST API 시크릿(Kakao REST 키, Naver client secret 등)은
 프론트엔드로 절대 내려가지 않는다. 프론트가 받는 건 브라우저 SDK용 키(`client_key`)뿐이다.
 
-## MCP 엔드포인트
-
-`backend/app/mcp/server.py`에 `MCPServer` 인스턴스를 정의하고,
-`backend/app/main.py`에서 `/mcp`로 마운트했다 (Streamable HTTP transport).
-지도 검색 등 백엔드 기능을 MCP tool로도 노출하려면 이 파일에 `@mcp.tool()`을 추가하면 된다.
-
-MCP 라이브러리는 `mcp` v2 (`mcp.server.mcpserver.MCPServer`, 구 `FastMCP`)를 사용한다.
-
 ## 로컬 실행
 
 ### Backend
@@ -38,7 +30,6 @@ uv run uvicorn app.main:app --reload --port 8000
 ```
 
 - Health check: http://localhost:8000/api/health
-- MCP endpoint: http://localhost:8000/mcp/
 
 ### Frontend
 
