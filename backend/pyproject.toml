@@ -8,12 +8,13 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "pydantic-settings>=2.6",
     "mcp>=1.2.0",
+    "httpx>=0.27",
+    "pyjwt[crypto]>=2.9",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.3",
-    "httpx>=0.27",
     "ruff>=0.14",
 ]
 
@@ -38,3 +39,7 @@ select = [
 [tool.ruff.lint.flake8-bugbear]
 # FastAPI's DI pattern relies on calling Depends()/Query()/etc. in defaults.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
