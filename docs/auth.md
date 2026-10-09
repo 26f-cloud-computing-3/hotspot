@@ -10,7 +10,7 @@
 4. 프론트 `lib/api.ts`가 모든 요청에 `Authorization: Bearer <access_token>` 부착
 5. 백엔드 `app/core/auth.py`의 `get_current_user`가 JWKS(`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`)로 서명, `aud=authenticated`, `iss`, `exp`를 검증하고 `sub`를 user id로 반환
 
-보호가 필요한 엔드포인트는 `Depends(get_current_user)`만 추가하면 된다 (예: `GET /api/me`). MCP(`/mcp`) 인증은 아직 적용하지 않았다.
+보호가 필요한 엔드포인트는 `Depends(get_current_user)`만 추가하면 된다 (예: `GET /api/me`).
 
 ## 사용자 테이블
 

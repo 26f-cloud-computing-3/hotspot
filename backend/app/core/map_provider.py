@@ -1,9 +1,8 @@
 """Map provider abstraction.
 
-The frontend and the MCP tools both need to search places / geocode
-addresses. Concrete providers (Kakao, Naver, Google) implement the same
-interface so the active provider can be swapped via `MAP_PROVIDER` without
-touching callers.
+The frontend needs to search places / geocode addresses. Concrete providers
+(Kakao, Naver, Google) implement the same interface so the active provider can
+be swapped via `MAP_PROVIDER` without touching callers.
 """
 
 from abc import ABC, abstractmethod

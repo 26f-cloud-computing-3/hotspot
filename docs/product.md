@@ -49,5 +49,5 @@
 
 ## 아직 구현되지 않은 것 (현재 코드 상태)
 
-현재는 지도 provider 추상화(Kakao 검색)와 MCP 엔드포인트 스캐폴드만 있다.
+현재는 지도 provider 추상화(Kakao 장소 검색 API)만 있다.
 DB/영속성, 컬렉션/피드/팔로우 API 및 화면은 미구현. Google 로그인은 `docs/auth.md` 참고 (Supabase Auth 연동 구현됨, 외부 설정 필요).
