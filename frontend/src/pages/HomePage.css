@@ -1,0 +1,29 @@
+@reference "../index.css";
+
+.page-heading {
+  @apply mb-[var(--space-xl)];
+}
+.page-heading h1 {
+  @apply mt-0 mx-0 mb-[var(--space-sm)] text-[color:var(--color-ink)] text-[length:var(--font-heading)] leading-[1.2] tracking-[-1.2px];
+}
+.page-heading p,
+.empty-panel p {
+  @apply m-0 text-[color:var(--color-muted)];
+}
+.map-panel {
+  @apply h-[calc(100dvh-var(--header-height)-var(--content-offset))] min-h-[var(--panel-min-height)] overflow-hidden border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.empty-panel {
+  @apply flex flex-col items-center justify-center gap-[var(--space-lg)] min-h-[var(--panel-min-height)] p-[var(--space-xxl)] text-center rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.empty-panel h2 {
+  @apply m-0 text-[length:var(--font-subheading)];
+}
+.notice {
+  @apply p-[var(--space-lg)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+@media (max-width: 767px) {
+  .map-panel {
+    @apply h-[calc(100dvh-var(--header-height)-var(--content-offset-mobile))];
+  }
+}
