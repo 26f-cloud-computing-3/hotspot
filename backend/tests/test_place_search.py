@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.map import get_provider
+from app.core.auth import CurrentUser, get_current_user
 from app.core.map_provider import (
     KakaoMapProvider,
     MapProvider,
@@ -15,6 +16,14 @@ from app.core.map_provider import (
     PlaceSearchResult,
 )
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def authenticated_user():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="user-123")
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
 
 KAKAO_DOC = {
     "id": "8332362",

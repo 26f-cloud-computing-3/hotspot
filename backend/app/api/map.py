@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.map_provider import (
     MapProvider,
@@ -33,7 +34,7 @@ def get_map_config(settings: Settings = Depends(get_settings)) -> dict:
     return {"provider": provider, "client_key": js_keys.get(provider, "")}
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(get_current_user)])
 async def search_places(
     query: str = Query(min_length=1, max_length=100, description="Place name or region"),
     lat: float | None = Query(None, ge=-90, le=90, description="Search center latitude"),
