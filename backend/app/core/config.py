@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     # Supabase Auth are verified against its JWKS; no shared secret is needed.
     supabase_url: str = ""
 
+    # Postgres connection string (Supabase: Project Settings > Database > Connection string).
+    # Server-side secret: it carries the DB password and bypasses row level security.
+    database_url: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
