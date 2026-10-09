@@ -1,6 +1,7 @@
 # 프로젝트 구조
 
 - 서비스 URL: [Hotspot](https://hotspot-cloud-computing.vercel.app/)
+- API 문서: [Swagger UI](https://hotspot-e7j4.onrender.com/docs)
 
 - `backend/` — FastAPI (Python, uv). REST API 제공.
 - `frontend/` — React + TypeScript (Vite, pnpm). 지도 SDK 연동 UI.
