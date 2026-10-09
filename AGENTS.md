@@ -12,6 +12,7 @@ Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉�
 - PR은 사용자가 요청할 때만 만든다. 만들 때는 `.github/pull_request_template.md` 구조를 따른다.
 - PR 전에 확인: backend `uv run ruff check . && uv run pytest`, frontend `pnpm check && pnpm build`.
 - 커밋은 작고 목적이 하나인 단위로. `.env` 등 시크릿은 절대 커밋하지 않는다.
+- **PR 브랜치의 커밋은 논리적 단위 구분을 유지한다.** 이 저장소는 rebase merge만 허용하므로 PR의 커밋이 그대로 `main` 히스토리에 남는다. "fix typo", "address review" 같은 수정 커밋을 쌓지 말고, 해당 논리적 커밋에 합쳐(fixup/amend 후 force-with-lease push) 각 커밋이 독립적으로 의미를 갖도록 정리한다.
 - 사용자와의 대화와 문서(`docs/`)는 한국어, 코드·식별자·커밋 메시지는 영어.
 
 ## Project structure
