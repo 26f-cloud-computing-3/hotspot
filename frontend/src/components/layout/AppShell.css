@@ -1,0 +1,74 @@
+@reference "../../index.css";
+
+.app-shell {
+  @apply min-h-dvh;
+}
+.topbar {
+  @apply fixed inset-x-0 top-0 z-20 flex h-[var(--header-height)] items-center gap-[var(--space-lg)] px-[var(--space-xl)] py-0 bg-[var(--color-canvas)] border-b-[length:var(--border-width)] border-solid border-[var(--color-line)];
+}
+.icon-button {
+  @apply inline-flex items-center justify-center size-[var(--control-size)] p-[var(--space-md)] border-0 rounded-[var(--radius-full)] bg-transparent hover:bg-[var(--color-card)];
+}
+.brand {
+  @apply inline-flex items-center gap-[var(--space-sm)] text-[color:var(--color-primary)] text-[length:var(--font-subheading)] font-bold no-underline;
+}
+.brand-caption {
+  @apply ml-auto text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.sidebar {
+  @apply fixed top-[var(--header-height)] bottom-0 left-0 w-[var(--sidebar-width)] py-[var(--space-xl)] px-[var(--space-lg)] bg-[var(--color-canvas)] border-r-[length:var(--border-width)] border-solid border-[var(--color-line)] flex flex-col overflow-y-auto;
+}
+.sidebar[hidden] {
+  @apply hidden;
+}
+.navigation {
+  @apply grid gap-[var(--space-sm)];
+}
+.nav-item {
+  @apply flex items-center gap-[var(--space-md)] w-full min-h-[var(--control-size)] py-[var(--space-md)] px-[var(--space-lg)] border-0 rounded-[var(--radius-md)] bg-transparent text-[color:var(--color-muted)] text-left font-semibold hover:bg-[var(--color-card)] hover:text-[color:var(--color-ink)] disabled:cursor-wait;
+}
+.nav-item[aria-current="page"] {
+  @apply bg-[var(--color-card)] text-[color:var(--color-primary)];
+}
+.sidebar-footer {
+  @apply mt-auto pt-[var(--space-xl)];
+}
+.logout {
+  @apply border-t-[length:var(--border-width)] border-solid border-[var(--color-line)];
+}
+.main-content {
+  @apply ml-[var(--sidebar-width)] min-w-0 pt-[calc(var(--header-height)+var(--space-xxl))] px-[var(--space-xxl)] pb-[var(--space-xxl)];
+}
+.app-shell[data-collapsed="true"] .main-content {
+  @apply ml-0;
+}
+.drawer {
+  @apply fixed top-0 bottom-0 left-0 right-auto m-0 w-[min(var(--sidebar-width),90vw)] max-w-none h-dvh max-h-none p-0 border-0 text-[color:var(--color-body)] bg-[var(--color-canvas)];
+}
+.drawer::backdrop {
+  @apply bg-[var(--color-scrim)];
+}
+.drawer-body {
+  @apply flex flex-col min-h-full p-[var(--space-lg)];
+}
+.drawer-header {
+  @apply flex items-center justify-between gap-[var(--space-sm)] mb-[var(--space-xl)];
+}
+.skip-link {
+  @apply fixed top-[var(--space-sm)] left-[var(--space-sm)] z-30 p-[var(--space-md)] bg-[var(--color-canvas)] rounded-[var(--radius-md)] -translate-y-[200%] focus:translate-y-0;
+}
+.brand-button {
+  @apply border-0 p-0 bg-transparent;
+}
+@media (max-width: 767px) {
+  .topbar {
+    @apply px-[var(--space-md)] py-0 gap-[var(--space-sm)];
+  }
+  .brand-caption,
+  .sidebar {
+    @apply hidden;
+  }
+  .main-content {
+    @apply ml-0 pt-[calc(var(--header-height)+var(--space-xl))] px-[var(--space-lg)] pb-[var(--space-xl)];
+  }
+}
