@@ -1,34 +1,83 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
 :root {
-  /* Design tokens mirrored from DESIGN.md */
-  --color-primary: #e60023;
-  --color-on-primary: #fff;
-  --color-primary-pressed: #cc001f;
-  --color-ink: #000;
-  --color-mute: #62625b;
-  --color-canvas: #fff;
-  --color-surface-soft: #fbfbf9;
+  color-scheme: light;
+  --color-on-primary: #ffffff;
+  --color-mute: var(--color-muted);
+  --color-surface-soft: var(--color-soft);
   --color-error: #9e0a0a;
-  --radius-md: 16px;
   --radius-lg: 32px;
   --space-xs: 6px;
+  --color-primary: #e60023;
+  --color-primary-pressed: #cc001f;
+  --color-ink: #000000;
+  --color-body: #33332e;
+  --color-muted: #62625b;
+  --color-canvas: #ffffff;
+  --color-soft: #fbfbf9;
+  --color-card: #f6f6f3;
+  --color-line: #dadad3;
+  --color-focus: #435ee5;
+  --color-scrim: rgb(0 0 0 / 50%);
+  --space-xxs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
   --space-lg: 16px;
+  --space-xl: 24px;
   --space-xxl: 32px;
-
-  color-scheme: light dark;
+  --radius-md: 16px;
+  --radius-full: 9999px;
+  --header-height: 64px;
+  --sidebar-width: 240px;
+  --control-size: 48px;
+  --icon-size: 24px;
+  --border-width: 1px;
+  --content-offset: 160px;
+  --content-offset-mobile: 144px;
+  --panel-min-height: 360px;
+  --font-body: 16px;
+  --font-small: 14px;
+  --font-heading: 28px;
+  --font-subheading: 22px;
   font:
-    16px / 1.5 system-ui,
+    var(--font-body) / 1.4 "Pin Sans",
+    system-ui,
     "Segoe UI",
-    Roboto,
     sans-serif;
+  color: var(--color-body);
+  background: var(--color-soft);
 }
-
 * {
   box-sizing: border-box;
 }
-
 html,
 body,
 #root {
   margin: 0;
+  min-height: 100%;
   height: 100%;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+button,
+a {
+  color: inherit;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-xxs);
+}
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
 }
