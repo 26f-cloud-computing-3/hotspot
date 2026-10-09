@@ -1,5 +1,7 @@
 # 프로젝트 구조
 
+- 서비스 URL: [Hotspot](https://hotspot-cloud-computing.vercel.app/)
+
 - `backend/` — FastAPI (Python, uv). REST API 제공.
 - `frontend/` — React + TypeScript (Vite, pnpm). 지도 SDK 연동 UI.
 
