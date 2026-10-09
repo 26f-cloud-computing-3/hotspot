@@ -19,6 +19,10 @@
   --color-soft: #fbfbf9;
   --color-card: #f6f6f3;
   --color-line: #dadad3;
+  --color-ash: #91918c;
+  --color-secondary: #e5e5e0;
+  --color-secondary-pressed: #c8c8c1;
+  --color-accent-purple: #7e238b;
   --color-focus: #435ee5;
   --color-scrim: rgb(0 0 0 / 50%);
   --space-xxs: 4px;
@@ -32,6 +36,10 @@
   --header-height: 64px;
   --sidebar-width: 240px;
   --control-size: 48px;
+  --button-height: 40px;
+  --input-height: 44px;
+  --card-min-width: 220px;
+  --dialog-width: 480px;
   --icon-size: 24px;
   --border-width: 1px;
   --content-offset: 160px;
@@ -39,6 +47,7 @@
   --panel-min-height: 360px;
   --font-body: 16px;
   --font-small: 14px;
+  --font-caption: 12px;
   --font-heading: 28px;
   --font-subheading: 22px;
   font:
@@ -67,12 +76,16 @@ button {
   font: inherit;
   cursor: pointer;
 }
+input {
+  font: inherit;
+}
 button,
 a {
   color: inherit;
 }
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+input:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--space-xxs);
 }

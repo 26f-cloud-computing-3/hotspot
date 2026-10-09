@@ -1,0 +1,101 @@
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "../../components/Icon";
+import { type Collection, listMyCollections } from "./api";
+import { NewCollectionDialog } from "./NewCollectionDialog";
+import "./CollectionsPage.css";
+
+export function CollectionsPage() {
+  const [collections, setCollections] = useState<Collection[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    listMyCollections()
+      .then((items) => {
+        if (!cancelled) setCollections(items);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  const newCollectionButton = (
+    <button
+      type="button"
+      className="button button-primary"
+      onClick={() => dialog.current?.showModal()}
+    >
+      <Icon name="plus" />새 컬렉션
+    </button>
+  );
+
+  let content = null;
+  if (failed) {
+    content = (
+      <section className="empty-panel" role="alert">
+        <p>컬렉션을 불러오지 못했습니다.</p>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => setAttempt((value) => value + 1)}
+        >
+          다시 시도
+        </button>
+      </section>
+    );
+  } else if (collections === null) {
+    content = (
+      <p className="collections-status" role="status">
+        불러오는 중…
+      </p>
+    );
+  } else if (collections.length === 0) {
+    content = (
+      <section className="empty-panel">
+        <Icon name="collection" />
+        <h2>아직 컬렉션이 없어요</h2>
+        <p>좋아하는 장소를 테마별로 모아 보세요.</p>
+        {newCollectionButton}
+      </section>
+    );
+  } else {
+    content = (
+      <>
+        <div className="collections-toolbar">
+          <p className="collections-status">컬렉션 {collections.length}개</p>
+          {newCollectionButton}
+        </div>
+        <ul className="collection-grid">
+          {collections.map((collection) => (
+            <li key={collection.id} className="collection-card">
+              <span className="badge" data-public={collection.is_public}>
+                {collection.is_public ? "공개" : "비공개"}
+              </span>
+              <h2>{collection.name}</h2>
+              <p>장소 {collection.place_count}개</p>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {content}
+      <NewCollectionDialog
+        dialogRef={dialog}
+        onCreated={(created) =>
+          setCollections((items) => [created, ...(items ?? [])])
+        }
+      />
+    </>
+  );
+}

@@ -1,0 +1,68 @@
+@reference "../../index.css";
+
+.button {
+  @apply inline-flex items-center justify-center gap-[var(--space-xs)] min-h-[var(--button-height)] py-[var(--space-xs)] px-[var(--space-lg)] border-0 rounded-[var(--radius-md)] text-[length:var(--font-small)] font-bold leading-none disabled:cursor-not-allowed disabled:bg-[var(--color-card)] disabled:text-[color:var(--color-ash)];
+}
+.button-primary {
+  @apply bg-[var(--color-primary)] text-[color:var(--color-on-primary)] enabled:hover:bg-[var(--color-primary-pressed)];
+}
+.button-secondary {
+  @apply bg-[var(--color-secondary)] text-[color:var(--color-ink)] enabled:hover:bg-[var(--color-secondary-pressed)];
+}
+.collections-toolbar {
+  @apply flex items-center justify-between gap-[var(--space-lg)] mb-[var(--space-lg)];
+}
+.collections-status {
+  @apply m-0 text-[color:var(--color-muted)];
+}
+.collection-grid {
+  @apply grid grid-cols-[repeat(auto-fill,minmax(var(--card-min-width),1fr))] gap-[var(--space-lg)] m-0 p-0 list-none;
+}
+.collection-card {
+  @apply flex flex-col items-start gap-[var(--space-sm)] p-[var(--space-xl)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.collection-card h2 {
+  @apply m-0 text-[color:var(--color-ink)] text-[length:var(--font-subheading)] leading-[1.25] break-words max-w-full;
+}
+.collection-card p {
+  @apply m-0 text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.badge {
+  @apply inline-flex items-center py-[var(--space-xxs)] px-[var(--space-md)] rounded-[var(--radius-full)] bg-[var(--color-secondary)] text-[color:var(--color-muted)] text-[length:var(--font-caption)] font-bold;
+}
+.badge[data-public="true"] {
+  @apply bg-[var(--color-accent-purple)] text-[color:var(--color-on-primary)];
+}
+.collection-dialog {
+  @apply w-[min(var(--dialog-width),calc(100vw-var(--space-xxl)))] p-0 border-0 rounded-[var(--radius-lg)] text-[color:var(--color-body)] bg-[var(--color-canvas)];
+}
+.collection-dialog::backdrop {
+  @apply bg-[var(--color-scrim)];
+}
+.collection-form {
+  @apply grid gap-[var(--space-xl)] p-[var(--space-xxl)];
+}
+.collection-form h2 {
+  @apply m-0 text-[color:var(--color-ink)] text-[length:var(--font-heading)] leading-[1.2];
+}
+.field {
+  @apply grid gap-[var(--space-sm)] text-[length:var(--font-small)] font-bold;
+}
+.text-input {
+  @apply w-full h-[var(--input-height)] py-0 px-[var(--space-lg)] border-[length:var(--border-width)] border-solid border-[var(--color-ash)] rounded-[var(--radius-md)] bg-[var(--color-canvas)] text-[color:var(--color-ink)] font-normal;
+}
+.checkbox-field {
+  @apply flex items-start gap-[var(--space-md)] cursor-pointer;
+}
+.checkbox-field input {
+  @apply size-[var(--space-lg)] mt-[var(--space-xxs)] accent-[var(--color-primary)];
+}
+.checkbox-field small {
+  @apply block text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.form-error {
+  @apply m-0 text-[length:var(--font-small)] text-[color:var(--color-error)];
+}
+.form-actions {
+  @apply flex justify-end gap-[var(--space-sm)];
+}
