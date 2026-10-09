@@ -10,7 +10,9 @@
 4. 프론트 `lib/api.ts`가 모든 요청에 `Authorization: Bearer <access_token>` 부착
 5. 백엔드 `app/core/auth.py`의 `get_current_user`가 JWKS(`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`)로 서명, `aud=authenticated`, `iss`, `exp`를 검증하고 `sub`를 user id로 반환
 
-보호가 필요한 엔드포인트는 `Depends(get_current_user)`만 추가하면 된다 (예: `GET /api/me`).
+보호가 필요한 엔드포인트는 `Depends(get_current_user)`만 추가하면 된다 (현재 `GET /api/me`, `GET /api/map/search`).
+
+장소 검색은 로그인한 사용자만 호출할 수 있다. 프론트엔드에서는 `lib/api.ts`의 `apiGet`을 사용하면 현재 세션의 Bearer 토큰이 자동으로 첨부된다. 예: `apiGet("/api/map/search?query=" + encodeURIComponent("카페"))`. `GET /api/map/config`는 인증 없이 공개한다.
 
 ## 사용자 테이블
 
