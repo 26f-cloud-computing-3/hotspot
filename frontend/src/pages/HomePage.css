@@ -11,7 +11,66 @@
   @apply m-0 text-[color:var(--color-muted)];
 }
 .map-panel {
-  @apply h-[calc(100dvh-var(--header-height)-var(--content-offset))] min-h-[var(--panel-min-height)] overflow-hidden border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+  @apply h-[min(56dvh,560px)] min-h-[var(--panel-min-height)] overflow-hidden border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.place-search-form {
+  @apply flex items-center gap-[var(--space-md)] h-[var(--control-size)] mb-[var(--space-lg)] px-[var(--space-lg)] rounded-[var(--radius-full)] bg-[var(--color-card)] text-[color:var(--color-muted)];
+}
+.place-search-form:focus-within {
+  @apply bg-[var(--color-canvas)] outline-2 outline-[var(--color-focus)] outline-offset-2;
+}
+.place-search-form input {
+  @apply min-w-0 flex-1 border-0 outline-none bg-transparent text-[length:var(--font-body)] text-[color:var(--color-ink)];
+}
+.place-search-form input::placeholder {
+  @apply text-[color:var(--color-muted)];
+}
+.place-search-form button {
+  @apply h-10 px-[var(--space-lg)] border-0 rounded-[var(--radius-md)] bg-[var(--color-primary)] text-[color:var(--color-on-primary)] text-[length:var(--font-small)] font-bold;
+}
+.place-search-form button:active {
+  @apply bg-[var(--color-primary-pressed)];
+}
+.place-search-form button:disabled {
+  @apply bg-[var(--color-line)] text-[color:var(--color-muted)] cursor-not-allowed;
+}
+.search-results {
+  @apply mt-[var(--space-xl)];
+}
+.result-summary {
+  @apply m-0 mb-[var(--space-md)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.place-list {
+  @apply grid grid-cols-3 gap-[var(--space-sm)] m-0 p-0 list-none;
+}
+.place-list button {
+  @apply flex items-center gap-[var(--space-md)] w-full min-h-16 p-[var(--space-md)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)] text-left;
+}
+.place-list button.is-selected {
+  @apply border-[var(--color-primary)] bg-[var(--color-card)];
+}
+.place-list button > span:last-child {
+  @apply min-w-0;
+}
+.place-list strong,
+.place-list small {
+  @apply block overflow-hidden text-ellipsis whitespace-nowrap;
+}
+.place-list small {
+  @apply mt-[var(--space-xxs)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.place-pin {
+  @apply flex items-center justify-center text-[color:var(--color-primary)];
+}
+.search-message {
+  @apply m-0 p-[var(--space-lg)] rounded-[var(--radius-md)] bg-[var(--color-card)] text-[color:var(--color-muted)];
+}
+.search-error {
+  @apply mb-[var(--space-lg)] text-[color:var(--color-error)];
+}
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  clip: rect(0, 0, 0, 0);
 }
 .empty-panel {
   @apply flex flex-col items-center justify-center gap-[var(--space-lg)] min-h-[var(--panel-min-height)] p-[var(--space-xxl)] text-center rounded-[var(--radius-md)] bg-[var(--color-card)];
@@ -24,6 +83,15 @@
 }
 @media (max-width: 767px) {
   .map-panel {
-    @apply h-[calc(100dvh-var(--header-height)-var(--content-offset-mobile))];
+    @apply h-[50dvh];
+  }
+  .place-list {
+    @apply grid-cols-1;
+  }
+  .place-search-form {
+    @apply gap-[var(--space-sm)] px-[var(--space-md)];
+  }
+  .place-search-form button {
+    @apply px-[var(--space-md)];
   }
 }
