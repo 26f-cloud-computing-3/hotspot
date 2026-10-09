@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Product context
 
-Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉션을 팔로워 피드로 공유하는 웹 서비스 (데스크톱/모바일 반응형). 화면 6종: 로그인(Google) · 피드 · 장소 찾기 · 내 컬렉션 · 컬렉션 상세 · 팔로워. 요약은 `docs/product.md`, 원본은 Notion 기획안. 기능을 구현하기 전에 `docs/product.md`를 먼저 확인할 것. UI를 만들 때는 루트 `DESIGN.md`(디자인 시스템: 컬러/타이포/컴포넌트 토큰)를 따른다. 색·간격·라디우스는 하드코딩하지 말고 토큰(CSS 변수)으로 참조한다.
+Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉션을 팔로워 피드로 공유하는 웹 서비스 (데스크톱/모바일 반응형). 화면 6종: 로그인(Google) · 피드 · 장소 찾기 · 컬렉션 · 컬렉션 상세 · 팔로워. 요약은 `docs/product.md`, 원본은 Notion 기획안. 기능을 구현하기 전에 `docs/product.md`를 먼저 확인할 것. UI를 만들 때는 루트 `DESIGN.md`(디자인 시스템: 컬러/타이포/컴포넌트 토큰)를 따른다. 색·간격·라디우스는 하드코딩하지 말고 토큰(CSS 변수)으로 참조한다.
 
 ## Git workflow (MUST follow)
 
@@ -59,6 +59,10 @@ The active map provider is a **backend** decision, not a frontend one: `MAP_PROV
 - Backend side: `MapProvider` ABC in `backend/app/core/map_provider.py`. Each provider (`KakaoMapProvider`, `NaverMapProvider`, `GoogleMapProvider`) implements `search_places()`. Only Kakao is actually implemented; Naver and Google are stubs that raise `NotImplementedError`. `get_map_provider(settings)` is the factory used by the REST API.
 - Frontend side: `frontend/src/features/map/MapView.tsx` fetches `/api/map/config`, then renders the matching component from `frontend/src/features/map/providers/` via the `PROVIDERS` lookup map. Every provider component implements `MapViewProps` (`frontend/src/features/map/types.ts`).
 - To add/change a provider: implement `MapProvider` on the backend, add/complete the matching component under `frontend/src/features/map/providers/` satisfying `MapViewProps`, and wire it into `PROVIDERS` in `MapView.tsx`. No other call site needs to change.
+
+### Persistence (backend connects to Postgres directly)
+
+The backend talks to the Supabase Postgres database over a direct connection (`DATABASE_URL`, SQLAlchemy 2 + psycopg 3, sync sessions). `backend/app/core/db.py` provides the `get_db` dependency; ORM models live in `backend/app/models/`. The schema is owned by hand-written SQL in `backend/supabase/migrations/` (run in the Supabase SQL Editor) — ORM models only mirror it. This connection bypasses row level security, so **every query must scope by the signed-in user in backend code** (`Depends(get_current_user)`). See `docs/database.md`.
 
 ### Secret handling (Kakao has two distinct keys)
 
