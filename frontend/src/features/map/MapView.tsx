@@ -4,7 +4,7 @@ import { apiGet } from "../../lib/api";
 import { GoogleMap } from "./providers/GoogleMap";
 import { KakaoMap } from "./providers/KakaoMap";
 import { NaverMap } from "./providers/NaverMap";
-import type { LatLng, MapConfig } from "./types";
+import type { LatLng, MapConfig, Place } from "./types";
 
 const PROVIDERS = {
   kakao: KakaoMap,
@@ -15,9 +15,18 @@ const PROVIDERS = {
 interface MapViewContainerProps {
   center: LatLng;
   level?: number;
+  places?: Place[];
+  selectedPlaceId?: string | null;
+  onPlaceSelect?: (place: Place) => void;
 }
 
-export function MapView({ center, level }: MapViewContainerProps) {
+export function MapView({
+  center,
+  level,
+  places,
+  selectedPlaceId,
+  onPlaceSelect,
+}: MapViewContainerProps) {
   const [config, setConfig] = useState<MapConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +41,13 @@ export function MapView({ center, level }: MapViewContainerProps) {
 
   const Provider = PROVIDERS[config.provider];
   return (
-    <Provider clientKey={config.client_key} center={center} level={level} />
+    <Provider
+      clientKey={config.client_key}
+      center={center}
+      level={level}
+      places={places}
+      selectedPlaceId={selectedPlaceId}
+      onPlaceSelect={onPlaceSelect}
+    />
   );
 }

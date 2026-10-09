@@ -6,10 +6,8 @@ import {
   type Page,
 } from "../components/layout/navigationItems";
 import { useAuth } from "../features/auth/AuthProvider";
-import { MapView } from "../features/map/MapView";
+import { PlaceSearch } from "../features/map/PlaceSearch";
 import "./HomePage.css";
-
-const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
 
 export function HomePage() {
   const { signOut } = useAuth();
@@ -56,9 +54,7 @@ export function HomePage() {
         </p>
       )}
       {page === "places" ? (
-        <section className="map-panel" aria-label="장소 지도">
-          <MapView center={SEOUL_CITY_HALL} />
-        </section>
+        <PlaceSearch />
       ) : (
         <section className="empty-panel">
           <Icon name={activePage.icon} />
