@@ -1,16 +1,18 @@
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+from sqlalchemy import delete, func, literal, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.users import get_registered_user
 from app.models.collection import Collection
 from app.models.collection_history import CollectionAction, CollectionHistory
+from app.models.collection_place import CollectionPlace
 from app.models.user import User
 
 router = APIRouter(prefix="/api/collections", tags=["collections"])
@@ -33,28 +35,98 @@ class CollectionUpdate(BaseModel):
 
 
 class CollectionOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     name: str
     is_public: bool
-    # Saving places into a collection is not implemented yet, so this is always 0.
-    place_count: int = Field(default=0)
+    place_count: int
+    # Whether the place named in the list query is in this collection; null when none was named.
+    contains_place: bool | None = None
     created_at: datetime
+
+
+class CollectionPlaceIn(BaseModel):
+    """A place as the place search returned it; fields it does not list (distance) are ignored.
+
+    The backend cannot check these values against the map provider, so they are only
+    bounded here and stored as the saving user's own snapshot.
+    """
+
+    id: Annotated[str, StringConstraints(min_length=1, max_length=100)]
+    provider: Literal["kakao", "naver", "google"]
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    address: Annotated[str, StringConstraints(max_length=300)] = ""
+    road_address: Annotated[str, StringConstraints(max_length=300)] | None = None
+    category: Annotated[str, StringConstraints(max_length=200)] | None = None
+    phone: Annotated[str, StringConstraints(max_length=50)] | None = None
+    url: Annotated[str, StringConstraints(max_length=500)] | None = None
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+
+    @field_validator("url")
+    @classmethod
+    def _url_is_http(cls, value: str | None) -> str | None:
+        # The frontend renders this as a link, so schemes like javascript: must not get in.
+        if value is not None and not value.startswith(("http://", "https://")):
+            raise ValueError("url must start with http:// or https://")
+        return value
+
+
+class CollectionPlaceOut(BaseModel):
+    """Same shape as a place search result, so the frontend can treat both alike."""
+
+    id: str
+    provider: str
+    name: str
+    address: str
+    road_address: str | None
+    category: str | None
+    phone: str | None
+    url: str | None
+    lat: float
+    lng: float
+    added_at: datetime
 
 
 @router.get("")
 def list_my_collections(
+    provider: str | None = None,
+    place_id: str | None = None,
     user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> list[CollectionOut]:
-    """List the signed-in user's collections, newest first."""
-    rows = db.scalars(
-        select(Collection)
+    """List the signed-in user's collections, newest first.
+
+    Pass `provider` and `place_id` together to also learn which of them contain that place.
+    """
+    if (provider is None) != (place_id is None):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "provider and place_id must be given together",
+        )
+
+    place_count = (
+        select(func.count())
+        .select_from(CollectionPlace)
+        .where(CollectionPlace.collection_id == Collection.id)
+        .scalar_subquery()
+    )
+    contains_place = (
+        literal(None)
+        if provider is None
+        else select(CollectionPlace.id)
+        .where(
+            CollectionPlace.collection_id == Collection.id,
+            CollectionPlace.provider == provider,
+            CollectionPlace.provider_place_id == place_id,
+        )
+        .exists()
+    )
+    rows = db.execute(
+        select(Collection, place_count, contains_place)
         .where(Collection.owner_id == user.id)
         .order_by(Collection.created_at.desc(), Collection.id)
     )
-    return [CollectionOut.model_validate(row) for row in rows]
+    return [_collection_out(collection, count, contains) for collection, count, contains in rows]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -70,7 +142,7 @@ def create_collection(
     _record_history(db, collection, CollectionAction.CREATED)
     db.commit()
     db.refresh(collection)
-    return CollectionOut.model_validate(collection)
+    return _collection_out(collection, 0)
 
 
 @router.patch("/{collection_id}")
@@ -97,7 +169,12 @@ def update_collection(
         )
     db.commit()
     db.refresh(collection)
-    return CollectionOut.model_validate(collection)
+    place_count = db.scalar(
+        select(func.count())
+        .select_from(CollectionPlace)
+        .where(CollectionPlace.collection_id == collection.id)
+    )
+    return _collection_out(collection, place_count)
 
 
 @router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -118,6 +195,88 @@ def delete_collection(
     db.commit()
 
 
+@router.get("/{collection_id}/places")
+def list_collection_places(
+    collection_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> list[CollectionPlaceOut]:
+    """List the places in the signed-in user's collection, most recently added first."""
+    collection = _get_own_collection(db, user, collection_id)
+    rows = db.scalars(
+        select(CollectionPlace)
+        .where(CollectionPlace.collection_id == collection.id)
+        .order_by(CollectionPlace.created_at.desc(), CollectionPlace.id)
+    )
+    return [_place_out(row) for row in rows]
+
+
+@router.post("/{collection_id}/places", status_code=status.HTTP_201_CREATED)
+def add_place(
+    collection_id: uuid.UUID,
+    body: CollectionPlaceIn,
+    response: Response,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> CollectionPlaceOut:
+    """Save a place into the signed-in user's collection.
+
+    Saving a place that is already there succeeds with 200 and changes nothing: the stored
+    snapshot is kept and no history is recorded.
+    """
+    collection = _get_own_collection(db, user, collection_id)
+    place = _find_place(db, collection.id, body.provider, body.id)
+    if place is None:
+        place = CollectionPlace(
+            collection_id=collection.id,
+            provider=body.provider,
+            provider_place_id=body.id,
+            **body.model_dump(exclude={"id", "provider"}),
+        )
+        db.add(place)
+        _record_history(db, collection, CollectionAction.PLACE_ADDED, place_name=place.name)
+        try:
+            db.commit()
+        except IntegrityError:
+            # A concurrent request saved the same place (or deleted the collection) first.
+            db.rollback()
+            place = _find_place(db, collection_id, body.provider, body.id)
+            if place is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found") from None
+            response.status_code = status.HTTP_200_OK
+        else:
+            db.refresh(place)
+    else:
+        response.status_code = status.HTTP_200_OK
+    return _place_out(place)
+
+
+@router.delete(
+    "/{collection_id}/places/{provider}/{place_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def remove_place(
+    collection_id: uuid.UUID,
+    provider: str,
+    place_id: str,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """Remove a place from the signed-in user's collection.
+
+    Removing a place that is not there succeeds too, without recording history.
+    """
+    collection = _get_own_collection(db, user, collection_id)
+    place = _find_place(db, collection.id, provider, place_id)
+    if place is None:
+        return
+    # Deleting by id and checking the row count keeps two concurrent removals from both
+    # recording history.
+    removed = db.execute(delete(CollectionPlace).where(CollectionPlace.id == place.id)).rowcount
+    if removed:
+        _record_history(db, collection, CollectionAction.PLACE_REMOVED, place_name=place.name)
+    db.commit()
+
+
 def _get_own_collection(db: Session, user: User, collection_id: uuid.UUID) -> Collection:
     collection = db.scalar(
         select(Collection).where(Collection.id == collection_id, Collection.owner_id == user.id)
@@ -128,7 +287,53 @@ def _get_own_collection(db: Session, user: User, collection_id: uuid.UUID) -> Co
     return collection
 
 
-def _record_history(db: Session, collection: Collection, action: CollectionAction) -> None:
+def _find_place(
+    db: Session, collection_id: uuid.UUID, provider: str, provider_place_id: str
+) -> CollectionPlace | None:
+    return db.scalar(
+        select(CollectionPlace).where(
+            CollectionPlace.collection_id == collection_id,
+            CollectionPlace.provider == provider,
+            CollectionPlace.provider_place_id == provider_place_id,
+        )
+    )
+
+
+def _collection_out(
+    collection: Collection, place_count: int, contains_place: bool | None = None
+) -> CollectionOut:
+    return CollectionOut(
+        id=collection.id,
+        name=collection.name,
+        is_public=collection.is_public,
+        place_count=place_count,
+        contains_place=contains_place,
+        created_at=collection.created_at,
+    )
+
+
+def _place_out(place: CollectionPlace) -> CollectionPlaceOut:
+    return CollectionPlaceOut(
+        id=place.provider_place_id,
+        provider=place.provider,
+        name=place.name,
+        address=place.address,
+        road_address=place.road_address,
+        category=place.category,
+        phone=place.phone,
+        url=place.url,
+        lat=place.lat,
+        lng=place.lng,
+        added_at=place.created_at,
+    )
+
+
+def _record_history(
+    db: Session,
+    collection: Collection,
+    action: CollectionAction,
+    place_name: str | None = None,
+) -> None:
     db.add(
         CollectionHistory(
             actor_id=collection.owner_id,
@@ -136,5 +341,6 @@ def _record_history(db: Session, collection: Collection, action: CollectionActio
             action=action,
             collection_name=collection.name,
             is_public=collection.is_public,
+            place_name=place_name,
         )
     )

@@ -14,6 +14,8 @@ class CollectionAction(StrEnum):
     PUBLISHED = "collection_published"
     UNPUBLISHED = "collection_unpublished"
     DELETED = "collection_deleted"
+    PLACE_ADDED = "place_added"
+    PLACE_REMOVED = "place_removed"
 
 
 class CollectionHistory(Base):
@@ -31,4 +33,6 @@ class CollectionHistory(Base):
     # collection is renamed, deleted or has its visibility changed.
     collection_name: Mapped[str]
     is_public: Mapped[bool]
+    # Name of the place an action was about; null for actions that are not about a place.
+    place_name: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
