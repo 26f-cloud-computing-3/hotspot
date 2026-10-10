@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -23,6 +23,13 @@ CollectionName = Annotated[
 class CollectionCreate(BaseModel):
     name: CollectionName
     is_public: bool = False
+
+
+class CollectionUpdate(BaseModel):
+    """Fields left out (or sent as null) keep their current value."""
+
+    name: CollectionName | None = None
+    is_public: bool | None = None
 
 
 class CollectionOut(BaseModel):
@@ -60,15 +67,51 @@ def create_collection(
     collection = Collection(owner_id=user.id, name=body.name, is_public=body.is_public)
     db.add(collection)
     db.flush()
+    _record_history(db, collection, CollectionAction.CREATED)
+    db.commit()
+    db.refresh(collection)
+    return CollectionOut.model_validate(collection)
+
+
+@router.patch("/{collection_id}")
+def update_collection(
+    collection_id: uuid.UUID,
+    body: CollectionUpdate,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> CollectionOut:
+    """Rename the signed-in user's collection and/or change its visibility."""
+    collection = db.scalar(
+        select(Collection).where(Collection.id == collection_id, Collection.owner_id == user.id)
+    )
+    # Someone else's collection is reported as missing so its existence isn't revealed.
+    if collection is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found")
+
+    # Each actual change gets its own history row; resending a current value records nothing.
+    # The rename goes first so the visibility row's snapshot carries the new name.
+    if body.name is not None and body.name != collection.name:
+        collection.name = body.name
+        _record_history(db, collection, CollectionAction.RENAMED)
+    if body.is_public is not None and body.is_public != collection.is_public:
+        collection.is_public = body.is_public
+        _record_history(
+            db,
+            collection,
+            CollectionAction.PUBLISHED if body.is_public else CollectionAction.UNPUBLISHED,
+        )
+    db.commit()
+    db.refresh(collection)
+    return CollectionOut.model_validate(collection)
+
+
+def _record_history(db: Session, collection: Collection, action: CollectionAction) -> None:
     db.add(
         CollectionHistory(
             actor_id=collection.owner_id,
             collection_id=collection.id,
-            action=CollectionAction.CREATED,
+            action=action,
             collection_name=collection.name,
             is_public=collection.is_public,
         )
     )
-    db.commit()
-    db.refresh(collection)
-    return CollectionOut.model_validate(collection)

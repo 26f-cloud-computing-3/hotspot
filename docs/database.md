@@ -26,6 +26,7 @@
 |--------|------|------|
 | GET | `/api/collections` | 내 컬렉션 목록 (최신순) |
 | POST | `/api/collections` | 컬렉션 생성. `{ "name": "서울 카페", "is_public": false }` — 이름은 앞뒤 공백 제거 후 1~50자, 기본값 비공개 |
+| PATCH | `/api/collections/{id}` | 내 컬렉션의 이름 · 공개 여부 수정. `{ "name": "성수 카페", "is_public": true }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 이름 규칙은 생성과 같다. 다른 유저의 컬렉션이거나 없는 id면 404 |
 
 응답 항목: `id`, `name`, `is_public`, `place_count`, `created_at`. 장소 저장이 아직 없어서 `place_count`는 항상 0이다.
 
@@ -33,7 +34,11 @@
 
 `public.collection_history`는 유저가 컬렉션에 한 일을 쌓아 두는 추가 전용(append-only) 로그이고, 피드는 이 테이블을 읽어서 만든다. 컬렉션을 바꾸는 API는 **같은 트랜잭션 안에서** 히스토리 행을 함께 넣는다.
 
-- `action`: 지금은 `collection_created`(컬렉션 생성)만 기록한다. 수정 · 삭제 · 장소 추가/제외는 해당 기능을 만들 때 `action` 체크 제약과 `CollectionAction`에 값을 추가한다.
+- `action`: 지금 기록하는 값은 아래와 같다. 삭제 · 장소 추가/제외는 해당 기능을 만들 때 `action` 체크 제약과 `CollectionAction`에 값을 추가한다.
+  - `collection_created` — 컬렉션 생성
+  - `collection_renamed` — 이름 변경. `collection_name`에는 바뀐 이름이 남는다 (이전 이름은 앞선 행의 스냅샷에 있다).
+  - `collection_published` / `collection_unpublished` — 공개 여부 변경.
+  - 수정 요청에서는 값이 실제로 바뀐 항목만 기록하고, 현재 값을 다시 보내면 기록하지 않는다. 이름과 공개 여부를 한 번에 바꾸면 `collection_renamed` → 공개 여부 순으로 두 행이 남는다.
 - `collection_name`, `is_public`: 행위 시점의 스냅샷. 컬렉션 이름이 바뀌거나 삭제돼도 히스토리를 읽을 수 있고(`collection_id`는 삭제 시 null), `is_public`은 그 시점에 팔로워가 볼 수 있었는지를 뜻한다.
 - 비공개 컬렉션에 대한 행위도 기록한다. 피드에 노출할지는 읽는 쪽(피드 API)에서 `is_public`으로 거른다.
 
