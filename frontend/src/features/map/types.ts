@@ -38,4 +38,6 @@ export interface MapViewProps {
   selectedPlaceId?: string | null;
   onPlaceSelect?: (place: Place) => void;
   onPlaceClear?: () => void;
+  /** When set, the selected place's card offers to save it into a collection. */
+  onPlaceSave?: (place: Place) => void;
 }

@@ -29,6 +29,7 @@ export function KakaoMap({
   selectedPlaceId,
   onPlaceSelect,
   onPlaceClear,
+  onPlaceSave,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Kakao Maps SDK ships no official types
@@ -229,7 +230,11 @@ export function KakaoMap({
             className="place-overlay"
             style={{ paddingBottom: SELECTED_MARKER_SIZE.height + CARD_GAP }}
           >
-            <PlaceCard place={selectedPlace} onClose={onPlaceClear} />
+            <PlaceCard
+              place={selectedPlace}
+              onClose={onPlaceClear}
+              onSave={onPlaceSave && (() => onPlaceSave(selectedPlace))}
+            />
           </div>,
           overlayContent,
         )}

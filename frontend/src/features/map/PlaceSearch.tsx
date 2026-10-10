@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useState } from "react";
 
 import { Icon } from "../../components/Icon";
 import { apiGet } from "../../lib/api";
+import { SavePlaceDialog } from "../collections/SavePlaceDialog";
 import { MapView } from "./MapView";
 import type { Place, PlaceSearchResult } from "./types";
 
@@ -14,6 +15,7 @@ export function PlaceSearch() {
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
+  const [savingPlace, setSavingPlace] = useState<Place | null>(null);
 
   const selectPlace = useCallback((place: Place) => {
     setSelectedPlaceId(place.id);
@@ -79,6 +81,7 @@ export function PlaceSearch() {
           selectedPlaceId={selectedPlaceId}
           onPlaceSelect={selectPlace}
           onPlaceClear={clearSelection}
+          onPlaceSave={setSavingPlace}
         />
       </section>
 
@@ -114,6 +117,14 @@ export function PlaceSearch() {
             <p className="search-message">검색 결과가 없습니다.</p>
           )}
         </div>
+      )}
+
+      {savingPlace && (
+        <SavePlaceDialog
+          key={`${savingPlace.provider}-${savingPlace.id}`}
+          place={savingPlace}
+          onClose={() => setSavingPlace(null)}
+        />
       )}
     </section>
   );

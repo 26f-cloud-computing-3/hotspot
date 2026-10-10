@@ -19,6 +19,7 @@ interface MapViewContainerProps {
   selectedPlaceId?: string | null;
   onPlaceSelect?: (place: Place) => void;
   onPlaceClear?: () => void;
+  onPlaceSave?: (place: Place) => void;
 }
 
 export function MapView({
@@ -28,6 +29,7 @@ export function MapView({
   selectedPlaceId,
   onPlaceSelect,
   onPlaceClear,
+  onPlaceSave,
 }: MapViewContainerProps) {
   const [config, setConfig] = useState<MapConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function MapView({
       selectedPlaceId={selectedPlaceId}
       onPlaceSelect={onPlaceSelect}
       onPlaceClear={onPlaceClear}
+      onPlaceSave={onPlaceSave}
     />
   );
 }
