@@ -19,6 +19,8 @@ const SELECTED_MARKER_SIZE = { width: 38, height: 50 };
 const CARD_GAP = 8;
 // How far below the map center the selected marker sits, so its card stays in view.
 const CARD_ROOM = 96;
+// How far from a tap, in screen pixels, a place still counts as the one tapped.
+const TAP_RADIUS_PX = 40;
 const LOCATE_TIMEOUT_MS = 10000;
 
 export function KakaoMap({
@@ -29,6 +31,8 @@ export function KakaoMap({
   selectedPlaceId,
   onPlaceSelect,
   onPlaceClear,
+  onMapClick,
+  fitPlaces = true,
   onPlaceSave,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,13 +79,31 @@ export function KakaoMap({
   }, [center.lat, center.lng, isReady]);
 
   useEffect(() => {
-    if (!isReady || !mapRef.current || !onPlaceClear) return;
+    if (!isReady || !mapRef.current) return;
     const map = mapRef.current;
-    window.kakao.maps.event.addListener(map, "click", onPlaceClear);
-    return () => {
-      window.kakao.maps.event.removeListener(map, "click", onPlaceClear);
+    // biome-ignore lint/suspicious/noExplicitAny: Kakao Maps SDK ships no official types
+    const handleClick = ({ latLng }: any) => {
+      // With a card open, a tap on the map only dismisses it.
+      if (selectedPlaceId) {
+        onPlaceClear?.();
+        return;
+      }
+      if (!onMapClick) return;
+      const projection = map.getProjection();
+      const point = projection.containerPointFromCoords(latLng);
+      const edge = projection.coordsFromContainerPoint(
+        new window.kakao.maps.Point(point.x + TAP_RADIUS_PX, point.y),
+      );
+      const radius = new window.kakao.maps.Polyline({
+        path: [latLng, edge],
+      }).getLength();
+      onMapClick({ lat: latLng.getLat(), lng: latLng.getLng() }, radius);
     };
-  }, [isReady, onPlaceClear]);
+    window.kakao.maps.event.addListener(map, "click", handleClick);
+    return () => {
+      window.kakao.maps.event.removeListener(map, "click", handleClick);
+    };
+  }, [isReady, onMapClick, onPlaceClear, selectedPlaceId]);
 
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
@@ -134,7 +156,7 @@ export function KakaoMap({
           ),
         );
       }
-    } else {
+    } else if (fitPlaces) {
       mapRef.current.setBounds(bounds, 48, 48, 48, 48);
     }
 
@@ -142,7 +164,7 @@ export function KakaoMap({
       for (const marker of markersRef.current) marker.setMap(null);
       markersRef.current = [];
     };
-  }, [isReady, onPlaceSelect, places, selectedPlaceId]);
+  }, [fitPlaces, isReady, onPlaceSelect, places, selectedPlaceId]);
 
   useEffect(() => {
     if (!isReady || !mapRef.current || !selectedPlace) return;
