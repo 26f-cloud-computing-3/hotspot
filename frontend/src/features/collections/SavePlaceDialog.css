@@ -1,0 +1,26 @@
+@reference "../../index.css";
+
+.save-place-heading p {
+  @apply m-0 mt-[var(--space-xs)] overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--color-muted)];
+}
+.save-place-list {
+  @apply grid gap-[var(--space-lg)] max-h-[40dvh] m-0 p-0 overflow-y-auto list-none;
+}
+.save-place-list span {
+  @apply min-w-0 break-words text-[color:var(--color-ink)] font-bold;
+}
+.save-place-list small {
+  @apply font-normal;
+}
+.save-place-list input:disabled {
+  @apply cursor-progress;
+}
+.save-place-status {
+  @apply grid justify-items-start gap-[var(--space-md)] m-0 text-[color:var(--color-muted)];
+}
+.save-place-status p {
+  @apply m-0;
+}
+.save-place-actions {
+  @apply justify-between;
+}

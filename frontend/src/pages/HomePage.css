@@ -108,6 +108,9 @@
 .place-card a {
   @apply inline-block mt-[var(--space-sm)] font-bold text-[color:var(--color-primary)] no-underline hover:underline;
 }
+.place-card-save {
+  @apply flex items-center justify-center gap-[var(--space-xs)] w-full min-h-[var(--button-height)] mt-[var(--space-md)] px-[var(--space-lg)] border-0 rounded-[var(--radius-md)] bg-[var(--color-primary)] text-[color:var(--color-on-primary)] font-bold leading-none hover:bg-[var(--color-primary-pressed)];
+}
 .search-message {
   @apply m-0 p-[var(--space-lg)] rounded-[var(--radius-md)] bg-[var(--color-card)] text-[color:var(--color-muted)];
 }

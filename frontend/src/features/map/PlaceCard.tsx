@@ -4,6 +4,7 @@ import type { Place } from "./types";
 interface PlaceCardProps {
   place: Place;
   onClose?: () => void;
+  onSave?: () => void;
 }
 
 // Kakao categories arrive as "음식점 > 카페 > 커피전문점"; the last segment is the most specific.
@@ -11,7 +12,7 @@ function shortCategory(category: string | null) {
   return category?.split(">").at(-1)?.trim() || null;
 }
 
-export function PlaceCard({ place, onClose }: PlaceCardProps) {
+export function PlaceCard({ place, onClose, onSave }: PlaceCardProps) {
   const category = shortCategory(place.category);
   const address = place.road_address || place.address;
 
@@ -34,6 +35,12 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
         <a href={place.url} target="_blank" rel="noreferrer">
           지도에서 자세히 보기
         </a>
+      )}
+      {onSave && (
+        <button type="button" className="place-card-save" onClick={onSave}>
+          <Icon name="plus" />
+          컬렉션에 담기
+        </button>
       )}
     </article>
   );
