@@ -145,6 +145,17 @@ def create_collection(
     return _collection_out(collection, 0)
 
 
+@router.get("/{collection_id}")
+def get_collection(
+    collection_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> CollectionOut:
+    """Return one of the signed-in user's collections."""
+    collection = _get_own_collection(db, user, collection_id)
+    return _collection_out(collection, _count_places(db, collection))
+
+
 @router.patch("/{collection_id}")
 def update_collection(
     collection_id: uuid.UUID,
@@ -169,12 +180,7 @@ def update_collection(
         )
     db.commit()
     db.refresh(collection)
-    place_count = db.scalar(
-        select(func.count())
-        .select_from(CollectionPlace)
-        .where(CollectionPlace.collection_id == collection.id)
-    )
-    return _collection_out(collection, place_count)
+    return _collection_out(collection, _count_places(db, collection))
 
 
 @router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -285,6 +291,14 @@ def _get_own_collection(db: Session, user: User, collection_id: uuid.UUID) -> Co
     if collection is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found")
     return collection
+
+
+def _count_places(db: Session, collection: Collection) -> int:
+    return db.scalar(
+        select(func.count())
+        .select_from(CollectionPlace)
+        .where(CollectionPlace.collection_id == collection.id)
+    )
 
 
 def _find_place(

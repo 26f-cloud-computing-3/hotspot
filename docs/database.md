@@ -26,6 +26,7 @@
 |--------|------|------|
 | GET | `/api/collections` | 내 컬렉션 목록 (최신순). `?provider=kakao&place_id=1001`을 함께 주면 각 항목의 `contains_place`에 그 장소가 담겨 있는지가 들어간다 (둘 중 하나만 주면 422) |
 | POST | `/api/collections` | 컬렉션 생성. `{ "name": "서울 카페", "is_public": false }` — 이름은 앞뒤 공백 제거 후 1~50자, 기본값 비공개 |
+| GET | `/api/collections/{id}` | 내 컬렉션 하나 조회 (컬렉션 상세 화면용) |
 | PATCH | `/api/collections/{id}` | 내 컬렉션의 이름 · 공개 여부 수정. `{ "name": "성수 카페", "is_public": true }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 이름 규칙은 생성과 같다 |
 | DELETE | `/api/collections/{id}` | 내 컬렉션 삭제. 성공 시 204(본문 없음). 담긴 장소도 함께 지워진다 |
 | GET | `/api/collections/{id}/places` | 내 컬렉션에 담긴 장소 목록 (최근에 담은 순) |
