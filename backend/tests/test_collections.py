@@ -2,28 +2,17 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.pool import StaticPool
 
 from app.core.auth import CurrentUser, get_current_user
 from app.core.config import Settings, get_settings
-from app.core.db import Base, get_engine
+from app.core.db import get_engine
 from app.main import app
 from app.models.collection_history import CollectionHistory
 
 ALICE = str(uuid.uuid4())
 BOB = str(uuid.uuid4())
-
-
-@pytest.fixture
-def engine():
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
-    Base.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
 
 
 @pytest.fixture
