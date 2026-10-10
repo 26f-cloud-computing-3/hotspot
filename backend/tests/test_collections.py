@@ -34,6 +34,7 @@ def test_requires_auth(client):
     assert client.post("/api/collections", json={"name": "Cafes"}).status_code == 401
     patch = client.patch(f"/api/collections/{uuid.uuid4()}", json={"name": "Cafes"})
     assert patch.status_code == 401
+    assert client.delete(f"/api/collections/{uuid.uuid4()}").status_code == 401
 
 
 def test_create_defaults_to_private(client):
@@ -221,6 +222,52 @@ def test_update_missing_collection_is_not_found(client):
     _sign_in(ALICE)
     res = client.patch(f"/api/collections/{uuid.uuid4()}", json={"name": "Cafes"})
     assert res.status_code == 404
+
+
+def test_delete_removes_collection(client):
+    _sign_in(ALICE)
+    kept = client.post("/api/collections", json={"name": "Cafes"}).json()
+    deleted = client.post("/api/collections", json={"name": "Bars"}).json()
+
+    res = client.delete(f"/api/collections/{deleted['id']}")
+    assert res.status_code == 204
+    assert res.content == b""
+    assert [c["id"] for c in client.get("/api/collections").json()] == [kept["id"]]
+    assert client.patch(f"/api/collections/{deleted['id']}", json={}).status_code == 404
+    assert client.delete(f"/api/collections/{deleted['id']}").status_code == 404
+
+
+def test_delete_records_history_with_last_snapshot(client, engine):
+    _sign_in(ALICE)
+    created = client.post("/api/collections", json={"name": "Cafes"}).json()
+    client.patch(f"/api/collections/{created['id']}", json={"name": "Bars", "is_public": True})
+
+    client.delete(f"/api/collections/{created['id']}")
+
+    assert _history(engine) == [
+        ("collection_created", "Cafes", False),
+        ("collection_renamed", "Bars", False),
+        ("collection_published", "Bars", True),
+        ("collection_deleted", "Bars", True),
+    ]
+
+
+def test_delete_others_collection_is_not_found(client, engine):
+    _sign_in(BOB)
+    bobs = client.post("/api/collections", json={"name": "Bob's"}).json()
+
+    _sign_in(ALICE)
+    assert client.delete(f"/api/collections/{bobs['id']}").status_code == 404
+
+    _sign_in(BOB)
+    assert [c["id"] for c in client.get("/api/collections").json()] == [bobs["id"]]
+    assert _history(engine) == [("collection_created", "Bob's", False)]
+
+
+def test_delete_missing_collection_is_not_found(client, engine):
+    _sign_in(ALICE)
+    assert client.delete(f"/api/collections/{uuid.uuid4()}").status_code == 404
+    assert _history(engine) == []
 
 
 def test_database_not_configured():

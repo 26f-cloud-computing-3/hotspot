@@ -81,12 +81,7 @@ def update_collection(
     db: Session = Depends(get_db),
 ) -> CollectionOut:
     """Rename the signed-in user's collection and/or change its visibility."""
-    collection = db.scalar(
-        select(Collection).where(Collection.id == collection_id, Collection.owner_id == user.id)
-    )
-    # Someone else's collection is reported as missing so its existence isn't revealed.
-    if collection is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found")
+    collection = _get_own_collection(db, user, collection_id)
 
     # Each actual change gets its own history row; resending a current value records nothing.
     # The rename goes first so the visibility row's snapshot carries the new name.
@@ -103,6 +98,34 @@ def update_collection(
     db.commit()
     db.refresh(collection)
     return CollectionOut.model_validate(collection)
+
+
+@router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_collection(
+    collection_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """Delete the signed-in user's collection. Its history rows stay, with collection_id nulled."""
+    collection = _get_own_collection(db, user, collection_id)
+    # Recorded before the delete so the row snapshots the collection's last name and visibility;
+    # the database then sets its collection_id to null along with the earlier rows.
+    _record_history(db, collection, CollectionAction.DELETED)
+    # Flush first: the history row references the collection, so it must be inserted before the
+    # DELETE runs (the ORM doesn't know about the foreign key and won't order them itself).
+    db.flush()
+    db.delete(collection)
+    db.commit()
+
+
+def _get_own_collection(db: Session, user: User, collection_id: uuid.UUID) -> Collection:
+    collection = db.scalar(
+        select(Collection).where(Collection.id == collection_id, Collection.owner_id == user.id)
+    )
+    # Someone else's collection is reported as missing so its existence isn't revealed.
+    if collection is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found")
+    return collection
 
 
 def _record_history(db: Session, collection: Collection, action: CollectionAction) -> None:
