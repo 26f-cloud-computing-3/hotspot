@@ -33,6 +33,9 @@
 .collection-card h2 {
   @apply m-0 text-[color:var(--color-ink)] text-[length:var(--font-subheading)] leading-[1.25] break-words max-w-full;
 }
+.collection-card h2 a {
+  @apply no-underline hover:underline;
+}
 .collection-card p {
   @apply m-0 text-[length:var(--font-small)] text-[color:var(--color-muted)];
 }

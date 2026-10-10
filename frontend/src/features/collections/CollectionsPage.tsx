@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { Icon } from "../../components/Icon";
 import { type Collection, listMyCollections } from "./api";
 import { CollectionDialog } from "./CollectionDialog";
@@ -94,7 +95,11 @@ export function CollectionsPage() {
                   <Icon name="edit" />
                 </button>
               </div>
-              <h2>{collection.name}</h2>
+              <h2>
+                <Link to={`/collections/${collection.id}`}>
+                  {collection.name}
+                </Link>
+              </h2>
               <p>장소 {collection.place_count}개</p>
             </li>
           ))}

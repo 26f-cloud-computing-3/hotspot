@@ -1,0 +1,55 @@
+@reference "../../index.css";
+
+.back-link {
+  @apply inline-flex items-center gap-[var(--space-xs)] mb-[var(--space-lg)] text-[length:var(--font-small)] font-bold text-[color:var(--color-muted)] no-underline hover:text-[color:var(--color-ink)];
+}
+.collection-detail-header {
+  @apply flex flex-wrap items-center gap-[var(--space-md)] mb-[var(--space-lg)];
+}
+.collection-detail-header h2 {
+  @apply m-0 min-w-0 break-words text-[color:var(--color-ink)] text-[length:var(--font-subheading)] leading-[1.25];
+}
+.collection-detail-header p {
+  @apply ml-auto;
+}
+.collection-detail .form-error {
+  @apply mb-[var(--space-lg)];
+}
+.collection-detail a.button {
+  @apply no-underline hover:bg-[var(--color-primary-pressed)];
+}
+.saved-place-list {
+  @apply grid grid-cols-3 gap-[var(--space-sm)] m-0 mt-[var(--space-xl)] p-0 list-none;
+}
+.saved-place-list li {
+  @apply flex items-center gap-[var(--space-xs)] min-w-0 pr-[var(--space-sm)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)];
+}
+.saved-place-list li.is-selected {
+  @apply border-[var(--color-primary)] bg-[var(--color-card)];
+}
+.saved-place {
+  @apply flex items-center gap-[var(--space-md)] min-w-0 flex-1 min-h-16 p-[var(--space-md)] border-0 rounded-[var(--radius-md)] bg-transparent text-left;
+}
+.saved-place > span:last-child {
+  @apply min-w-0;
+}
+.saved-place strong,
+.saved-place small {
+  @apply block overflow-hidden text-ellipsis whitespace-nowrap;
+}
+.saved-place small {
+  @apply mt-[var(--space-xxs)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.saved-place-list .icon-button:disabled {
+  @apply cursor-progress text-[color:var(--color-ash)];
+}
+@media (max-width: 1023px) {
+  .saved-place-list {
+    @apply grid-cols-2;
+  }
+}
+@media (max-width: 767px) {
+  .saved-place-list {
+    @apply grid-cols-1;
+  }
+}
