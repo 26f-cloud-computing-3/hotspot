@@ -124,6 +124,11 @@ export function CollectionsPage() {
               ),
             )
           }
+          onDeleted={(id) =>
+            setCollections((items) =>
+              (items ?? []).filter((item) => item.id !== id),
+            )
+          }
           onClose={() => setEditing(null)}
         />
       )}
