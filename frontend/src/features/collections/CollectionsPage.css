@@ -9,6 +9,9 @@
 .button-secondary {
   @apply bg-[var(--color-secondary)] text-[color:var(--color-ink)] enabled:hover:bg-[var(--color-secondary-pressed)];
 }
+.button-danger-text {
+  @apply mr-auto bg-transparent px-[var(--space-md)] text-[color:var(--color-error)] enabled:hover:bg-[var(--color-card)];
+}
 .collections-toolbar {
   @apply flex items-center justify-between gap-[var(--space-lg)] mb-[var(--space-lg)];
 }
@@ -65,6 +68,9 @@
 }
 .checkbox-field small {
   @apply block text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.dialog-message {
+  @apply m-0 text-[color:var(--color-body)];
 }
 .form-error {
   @apply m-0 text-[length:var(--font-small)] text-[color:var(--color-error)];

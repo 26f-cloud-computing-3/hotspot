@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from "../../lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../../lib/api";
 
 export const COLLECTION_NAME_MAX_LENGTH = 50;
 
@@ -28,4 +28,8 @@ export function updateCollection(
   body: Partial<CollectionFields>,
 ): Promise<Collection> {
   return apiPatch<Collection>(`/api/collections/${id}`, body);
+}
+
+export function deleteCollection(id: string): Promise<void> {
+  return apiDelete<void>(`/api/collections/${id}`);
 }
