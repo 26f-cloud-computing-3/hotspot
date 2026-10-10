@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 
+import { apiGet } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 
 interface AuthContextValue {
@@ -33,6 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => data.subscription.unsubscribe();
   }, []);
+
+  const userId = session?.user.id;
+  useEffect(() => {
+    // The backend creates the user's profile row on their first authenticated
+    // request; ask for it right after sign-in so the row exists before it is needed.
+    // Kept out of the onAuthStateChange callback, where calling supabase would deadlock.
+    if (userId) apiGet("/api/me").catch(() => {});
+  }, [userId]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
