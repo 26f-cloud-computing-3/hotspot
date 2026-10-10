@@ -37,4 +37,5 @@ export interface MapViewProps {
   places?: Place[];
   selectedPlaceId?: string | null;
   onPlaceSelect?: (place: Place) => void;
+  onPlaceClear?: () => void;
 }
