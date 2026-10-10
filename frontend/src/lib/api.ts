@@ -25,6 +25,8 @@ async function request<T>(
   if (!res.ok) {
     throw new Error(`${method} ${path} failed: ${res.status}`);
   }
+  // 204 No Content has no body to parse.
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -38,4 +40,12 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
 
 export function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return request<T>("PATCH", path, body);
+}
+
+export function apiPut<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>("PUT", path, body);
+}
+
+export function apiDelete<T>(path: string): Promise<T> {
+  return request<T>("DELETE", path);
 }
