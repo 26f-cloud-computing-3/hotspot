@@ -42,6 +42,26 @@
 - `collection_name`, `is_public`: 행위 시점의 스냅샷. 컬렉션 이름이 바뀌거나 삭제돼도 히스토리를 읽을 수 있고(`collection_id`는 삭제 시 null), `is_public`은 그 시점에 팔로워가 볼 수 있었는지를 뜻한다.
 - 비공개 컬렉션에 대한 행위도 기록한다. 피드에 노출할지는 읽는 쪽(피드 API)에서 `is_public`으로 거른다.
 
+## 팔로우
+
+`public.follow`(`follower_id`, `followee_id`, `created_at`)는 유저 간 단방향 팔로우다. 승인 절차 없이 즉시 팔로우되고, 복합 PK로 중복을, 체크 제약으로 자기 자신 팔로우를 막는다. SQL: `backend/supabase/migrations/0006_follow_table.sql`.
+
+모두 `Authorization: Bearer <access_token>` 필요.
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/users?q=` | 유저 검색. 핸들은 접두 일치, 이름은 부분 일치 (대소문자 무시, 앞의 `@`는 무시). 본인 제외, 핸들순 최대 20명 |
+| PUT | `/api/follows/{user_id}` | 팔로우. 이미 팔로우 중이어도 204. 본인이면 400, 없는 유저면 404 |
+| DELETE | `/api/follows/{user_id}` | 언팔로우. 팔로우 중이 아니어도 204 |
+| GET | `/api/follows/following` | 내가 팔로우한 유저 (최근 팔로우순) |
+| GET | `/api/follows/followers` | 나를 팔로우한 유저 (최근 팔로우순) |
+
+응답 항목: `id`, `name`, `handle`, `avatar_url`, `is_following`(내가 그 유저를 팔로우 중인지 — 팔로워 목록에서 맞팔 여부를 알 수 있다).
+
+- 목록 API는 로그인한 유저 본인 것만 돌려준다. 다른 유저의 팔로워/팔로잉 목록을 조회하는 API는 의도적으로 두지 않았다 (`docs/features.md` 4번).
+- 팔로우 자체는 `collection_history`에 기록하지 않는다. 피드는 `collection_history`를 `follow`와 조인(`actor_id = followee_id`, `follower_id = 나`, `is_public`)해서 만든다.
+- 목록은 아직 페이지네이션이 없다.
+
 ## 테스트
 
-`backend/tests/test_collections.py`는 인메모리 SQLite에 ORM 모델로 테이블을 만들어 돌린다. Postgres 전용 기능(제약 조건, RLS)은 테스트되지 않는다.
+DB를 쓰는 테스트(`backend/tests/conftest.py`의 `engine` 픽스처)는 인메모리 SQLite에 ORM 모델로 테이블을 만들어 돌린다. Postgres 전용 기능(제약 조건, RLS)은 테스트되지 않는다.
