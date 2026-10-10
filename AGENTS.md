@@ -62,7 +62,7 @@ The active map provider is a **backend** decision, not a frontend one: `MAP_PROV
 
 ### Persistence (backend connects to Postgres directly)
 
-The backend talks to the Supabase Postgres database over a direct connection (`DATABASE_URL`, SQLAlchemy 2 + psycopg 3, sync sessions). `backend/app/core/db.py` provides the `get_db` dependency; ORM models live in `backend/app/models/`. The schema is owned by hand-written SQL in `backend/supabase/migrations/` (run in the Supabase SQL Editor) — ORM models only mirror it. This connection bypasses row level security, so **every query must scope by the signed-in user in backend code** (`Depends(get_current_user)`). See `docs/database.md`.
+The backend talks to the Supabase Postgres database over a direct connection (`DATABASE_URL`, SQLAlchemy 2 + psycopg 3, sync sessions). `backend/app/core/db.py` provides the `get_db` dependency; ORM models live in `backend/app/models/`. The schema is owned by hand-written SQL in `backend/supabase/migrations/` (run in the Supabase SQL Editor) — ORM models only mirror it. This connection bypasses row level security, so **every query must scope by the signed-in user in backend code**. Use `Depends(get_registered_user)` (`backend/app/core/users.py`) for that: it returns the user's row and creates it on their first request — there is no signup trigger. See `docs/database.md`.
 
 ### Secret handling (Kakao has two distinct keys)
 
