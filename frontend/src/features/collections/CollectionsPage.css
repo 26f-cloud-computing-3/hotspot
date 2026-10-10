@@ -21,6 +21,12 @@
 .collection-card {
   @apply flex flex-col items-start gap-[var(--space-sm)] p-[var(--space-xl)] rounded-[var(--radius-md)] bg-[var(--color-card)];
 }
+.collection-card-header {
+  @apply flex items-center justify-between gap-[var(--space-sm)] self-stretch;
+}
+.icon-button {
+  @apply inline-flex items-center justify-center size-9 shrink-0 p-[var(--space-xs)] border-0 rounded-[var(--radius-full)] bg-transparent text-[color:var(--color-muted)] hover:bg-[var(--color-secondary)];
+}
 .collection-card h2 {
   @apply m-0 text-[color:var(--color-ink)] text-[length:var(--font-subheading)] leading-[1.25] break-words max-w-full;
 }

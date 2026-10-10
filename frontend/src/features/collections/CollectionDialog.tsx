@@ -1,40 +1,73 @@
-import { type RefObject, type SubmitEvent, useState } from "react";
+import { type RefObject, type SubmitEvent, useId, useState } from "react";
 import {
   COLLECTION_NAME_MAX_LENGTH,
   type Collection,
   createCollection,
+  updateCollection,
 } from "./api";
 
-interface NewCollectionDialogProps {
+const LABELS = {
+  create: {
+    title: "새 컬렉션",
+    visibility: "공개 컬렉션으로 만들기",
+    submit: "만들기",
+    saving: "만드는 중…",
+    error: "컬렉션을 만들지 못했습니다. 다시 시도해 주세요.",
+  },
+  edit: {
+    title: "컬렉션 수정",
+    visibility: "공개 컬렉션",
+    submit: "저장",
+    saving: "저장 중…",
+    error: "컬렉션을 저장하지 못했습니다. 다시 시도해 주세요.",
+  },
+};
+
+interface CollectionDialogProps {
   dialogRef: RefObject<HTMLDialogElement | null>;
-  onCreated: (collection: Collection) => void;
+  /** The collection to edit; omit it to create a new one. */
+  collection?: Collection;
+  onSaved: (collection: Collection) => void;
+  onClose?: () => void;
 }
 
-export function NewCollectionDialog({
+export function CollectionDialog({
   dialogRef,
-  onCreated,
-}: NewCollectionDialogProps) {
-  const [name, setName] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
+  collection,
+  onSaved,
+  onClose,
+}: CollectionDialogProps) {
+  const initialName = collection?.name ?? "";
+  const initialIsPublic = collection?.is_public ?? false;
+  const [name, setName] = useState(initialName);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const titleId = useId();
+
+  const editing = collection !== undefined;
+  const labels = editing ? LABELS.edit : LABELS.create;
+  const unchanged = name.trim() === initialName && isPublic === initialIsPublic;
 
   function reset() {
-    setName("");
-    setIsPublic(false);
+    setName(initialName);
+    setIsPublic(initialIsPublic);
     setError("");
   }
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError("");
+    const fields = { name: name.trim(), is_public: isPublic };
     try {
-      onCreated(
-        await createCollection({ name: name.trim(), is_public: isPublic }),
+      onSaved(
+        await (editing
+          ? updateCollection(collection.id, fields)
+          : createCollection(fields)),
       );
       dialogRef.current?.close();
     } catch {
-      setError("컬렉션을 만들지 못했습니다. 다시 시도해 주세요.");
+      setError(labels.error);
     } finally {
       setSaving(false);
     }
@@ -43,8 +76,11 @@ export function NewCollectionDialog({
     <dialog
       ref={dialogRef}
       className="collection-dialog"
-      aria-labelledby="new-collection-title"
-      onClose={reset}
+      aria-labelledby={titleId}
+      onClose={() => {
+        reset();
+        onClose?.();
+      }}
       onClick={(event) => {
         if (event.target === event.currentTarget) dialogRef.current?.close();
       }}
@@ -53,7 +89,7 @@ export function NewCollectionDialog({
       }}
     >
       <form className="collection-form" onSubmit={handleSubmit}>
-        <h2 id="new-collection-title">새 컬렉션</h2>
+        <h2 id={titleId}>{labels.title}</h2>
         <label className="field">
           <span>이름</span>
           <input
@@ -73,7 +109,7 @@ export function NewCollectionDialog({
             onChange={(event) => setIsPublic(event.target.checked)}
           />
           <span>
-            공개 컬렉션으로 만들기
+            {labels.visibility}
             <small>공개하면 팔로워의 피드에 노출됩니다.</small>
           </span>
         </label>
@@ -93,9 +129,9 @@ export function NewCollectionDialog({
           <button
             type="submit"
             className="button button-primary"
-            disabled={saving || !name.trim()}
+            disabled={saving || !name.trim() || (editing && unchanged)}
           >
-            {saving ? "만드는 중…" : "만들기"}
+            {saving ? labels.saving : labels.submit}
           </button>
         </div>
       </form>
