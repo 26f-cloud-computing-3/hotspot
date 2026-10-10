@@ -2,6 +2,7 @@ const PATHS = {
   menu: "M4 6h16M4 12h16M4 18h16",
   close: "m6 6 12 12M6 18 18 6",
   plus: "M12 5v14M5 12h14",
+  edit: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z",
   search: "M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   collection: "M4 5h16v15H4zM8 2h8M8 9h8M8 13h5",
   feed: "M4 4h16v16H4zM8 8h8M8 12h8M8 16h4",

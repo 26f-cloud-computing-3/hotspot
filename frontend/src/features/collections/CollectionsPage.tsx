@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../components/Icon";
 import { type Collection, listMyCollections } from "./api";
-import { NewCollectionDialog } from "./NewCollectionDialog";
+import { CollectionDialog } from "./CollectionDialog";
 import "./CollectionsPage.css";
 
 export function CollectionsPage() {
   const [collections, setCollections] = useState<Collection[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const dialog = useRef<HTMLDialogElement>(null);
+  const [editing, setEditing] = useState<Collection | null>(null);
+  const newDialog = useRef<HTMLDialogElement>(null);
+  const editDialog = useRef<HTMLDialogElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
   useEffect(() => {
@@ -26,11 +28,15 @@ export function CollectionsPage() {
     };
   }, [attempt]);
 
+  useEffect(() => {
+    if (editing) editDialog.current?.showModal();
+  }, [editing]);
+
   const newCollectionButton = (
     <button
       type="button"
       className="button button-primary"
-      onClick={() => dialog.current?.showModal()}
+      onClick={() => newDialog.current?.showModal()}
     >
       <Icon name="plus" />새 컬렉션
     </button>
@@ -75,9 +81,19 @@ export function CollectionsPage() {
         <ul className="collection-grid">
           {collections.map((collection) => (
             <li key={collection.id} className="collection-card">
-              <span className="badge" data-public={collection.is_public}>
-                {collection.is_public ? "공개" : "비공개"}
-              </span>
+              <div className="collection-card-header">
+                <span className="badge" data-public={collection.is_public}>
+                  {collection.is_public ? "공개" : "비공개"}
+                </span>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={`${collection.name} 수정`}
+                  onClick={() => setEditing(collection)}
+                >
+                  <Icon name="edit" />
+                </button>
+              </div>
               <h2>{collection.name}</h2>
               <p>장소 {collection.place_count}개</p>
             </li>
@@ -90,12 +106,27 @@ export function CollectionsPage() {
   return (
     <>
       {content}
-      <NewCollectionDialog
-        dialogRef={dialog}
-        onCreated={(created) =>
+      <CollectionDialog
+        dialogRef={newDialog}
+        onSaved={(created) =>
           setCollections((items) => [created, ...(items ?? [])])
         }
       />
+      {editing && (
+        <CollectionDialog
+          key={editing.id}
+          dialogRef={editDialog}
+          collection={editing}
+          onSaved={(updated) =>
+            setCollections((items) =>
+              (items ?? []).map((item) =>
+                item.id === updated.id ? updated : item,
+              ),
+            )
+          }
+          onClose={() => setEditing(null)}
+        />
+      )}
     </>
   );
 }
