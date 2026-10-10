@@ -83,6 +83,33 @@
 - 팔로우 자체는 `collection_history`에 기록하지 않는다. 피드는 `collection_history`를 `follow`와 조인(`actor_id = followee_id`, `follower_id = 나`, `is_public`)해서 만든다.
 - 목록은 아직 페이지네이션이 없다.
 
+## 피드
+
+`GET /api/feed` — 내가 팔로우한 유저가 공개 컬렉션에 한 활동을 최신순으로 돌려준다. `Authorization: Bearer <access_token>` 필요. 코드: `backend/app/api/feed.py`.
+
+| 쿼리 | 설명 |
+|------|------|
+| `limit` | 한 번에 받을 개수. 1~50, 기본 20 |
+| `continuation` | 앞선 응답의 `continuation` 값. 주면 그 다음(더 오래된) 활동부터 돌려준다. 잘못된 값이면 400 |
+
+응답은 `{ "items": [...], "continuation": "..." }`이다. `continuation`이 null이면 마지막 페이지다. 값은 마지막 항목의 `(created_at, id)`를 담은 불투명한 토큰이라, 그 사이에 새 활동이 생겨도 항목이 겹치거나 빠지지 않는다. 클라이언트는 내용을 해석하지 말고 그대로 돌려보낸다.
+
+항목: `id`, `type`, `actor`(`id`, `name`, `handle`, `avatar_url`), `collection_id`(삭제된 컬렉션이면 null), `collection_name`(활동 시점의 이름), `place_name`(장소 활동일 때만), `created_at`.
+
+| `type` | 히스토리 `action` |
+|--------|-------------------|
+| `place_added` / `place_removed` | 같은 이름 |
+| `collection_added` | `collection_created`(공개로 생성), `collection_published` |
+| `collection_renamed` | `collection_renamed` — `collection_name`은 바뀐 이름 |
+| `collection_removed` | `collection_deleted` |
+
+노출 규칙:
+
+- 활동 시점에 공개였고(`collection_history.is_public`) **지금도 공개인** 컬렉션의 활동만 보인다. 컬렉션을 비공개로 바꾸면 공개 시절의 활동도 피드에서 사라지고, 다시 공개하면 돌아온다. 비공개인 동안 한 활동은 공개 후에도 보이지 않는다.
+- 공개 컬렉션 삭제(`collection_removed`)만 예외로, 컬렉션이 없어도 스냅샷 기준으로 보인다. 그 컬렉션의 이전 활동은 함께 사라진다.
+- 비공개 전환(`collection_unpublished`)은 알리지 않는다.
+- 팔로우하기 전의 활동도 보이고, 언팔로우하면 그 유저의 활동은 모두 사라진다. 본인의 활동은 나오지 않는다.
+
 ## 테스트
 
 DB를 쓰는 테스트(`backend/tests/conftest.py`의 `engine` 픽스처)는 인메모리 SQLite에 ORM 모델로 테이블을 만들어 돌린다. Postgres 전용 기능(제약 조건, RLS)은 테스트되지 않는다.
