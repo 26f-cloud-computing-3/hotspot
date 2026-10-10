@@ -62,6 +62,24 @@
 .place-pin {
   @apply flex items-center justify-center text-[color:var(--color-primary)];
 }
+.map-canvas {
+  @apply relative size-full;
+}
+.map-locate {
+  @apply absolute right-[var(--space-md)] bottom-[var(--space-md)] z-10 inline-flex items-center justify-center size-10 p-[var(--space-sm)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-full)] bg-[var(--color-canvas)] text-[color:var(--color-ink)];
+}
+.map-locate:active {
+  @apply bg-[var(--color-secondary)];
+}
+.map-locate:disabled {
+  @apply text-[color:var(--color-ash)] cursor-wait;
+}
+.map-message {
+  @apply absolute left-[var(--space-md)] bottom-[var(--space-md)] z-10 max-w-[calc(100%-var(--control-size)-var(--space-xxl))] m-0 py-[var(--space-sm)] px-[var(--space-md)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)] text-[length:var(--font-small)] text-[color:var(--color-error)];
+}
+.location-dot {
+  @apply block size-4 border-2 border-solid border-[var(--color-canvas)] rounded-[var(--radius-full)] bg-[var(--color-focus)];
+}
 /* Kakao's overlay container sets white-space: nowrap; let card text wrap. */
 .place-overlay {
   @apply pointer-events-none whitespace-normal;
