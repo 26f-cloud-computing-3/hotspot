@@ -1,0 +1,5 @@
+@reference "../index.css";
+
+.avatar {
+  @apply flex items-center justify-center size-[var(--control-size)] shrink-0 rounded-[var(--radius-full)] object-cover bg-[var(--color-secondary)] text-[color:var(--color-muted)] font-bold;
+}

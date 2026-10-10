@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Avatar } from "../../components/Avatar";
 import { Icon } from "../../components/Icon";
 import {
   type FollowUser,
@@ -117,18 +118,7 @@ export function FollowersPage() {
       <ul className="user-list">
         {users.map((user) => (
           <li key={user.id} className="user-row">
-            {user.avatar_url ? (
-              <img
-                className="user-avatar"
-                src={user.avatar_url}
-                alt=""
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="user-avatar" aria-hidden="true">
-                {user.name.slice(0, 1)}
-              </span>
-            )}
+            <Avatar name={user.name} url={user.avatar_url} />
             <span className="user-identity">
               <strong>{user.name}</strong>
               <small>@{user.handle}</small>

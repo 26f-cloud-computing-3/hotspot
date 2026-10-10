@@ -33,9 +33,6 @@
 .user-row {
   @apply flex items-center gap-[var(--space-md)] p-[var(--space-md)] rounded-[var(--radius-md)] bg-[var(--color-card)];
 }
-.user-avatar {
-  @apply flex items-center justify-center size-[var(--control-size)] shrink-0 rounded-[var(--radius-full)] object-cover bg-[var(--color-secondary)] text-[color:var(--color-muted)] font-bold;
-}
 .user-identity {
   @apply min-w-0 flex-1;
 }
