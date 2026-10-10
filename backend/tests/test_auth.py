@@ -9,11 +9,13 @@ from fastapi.testclient import TestClient
 from app.api.map import get_provider
 from app.core.auth import get_jwks_client
 from app.core.config import Settings, get_settings
+from app.core.db import get_engine
 from app.core.map_provider import KakaoMapProvider
 from app.main import app
 
 SUPABASE_URL = "https://example.supabase.co"
 ISSUER = f"{SUPABASE_URL}/auth/v1"
+USER_ID = "3f2b8c1e-7d4a-4e0b-9a6c-5d1f2e3a4b5c"
 
 
 class _SigningKey:
@@ -35,8 +37,9 @@ def private_key():
 
 
 @pytest.fixture
-def client(private_key):
+def client(private_key, engine):
     app.dependency_overrides[get_settings] = lambda: Settings(supabase_url=SUPABASE_URL)
+    app.dependency_overrides[get_engine] = lambda: engine
     app.dependency_overrides[get_jwks_client] = lambda: _FakeJWKSClient(private_key.public_key())
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -44,7 +47,8 @@ def client(private_key):
 
 def _token(private_key, **overrides):
     claims = {
-        "sub": "user-123",
+        "sub": USER_ID,
+        "user_metadata": {"full_name": "A Person", "avatar_url": "https://a/p.png"},
         "email": "a@example.com",
         "aud": "authenticated",
         "iss": ISSUER,
@@ -62,7 +66,17 @@ def _get_me(client, token=None):
 def test_valid_token(client, private_key):
     res = _get_me(client, _token(private_key))
     assert res.status_code == 200
-    assert res.json() == {"id": "user-123", "email": "a@example.com"}
+    assert res.json() == {
+        "id": USER_ID,
+        "email": "a@example.com",
+        "name": "A Person",
+        "handle": "a",
+        "avatar_url": "https://a/p.png",
+    }
+
+
+def test_non_uuid_subject(client, private_key):
+    assert _get_me(client, _token(private_key, sub="not-a-uuid")).status_code == 401
 
 
 def test_missing_header(client):

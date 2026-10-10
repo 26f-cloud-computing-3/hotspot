@@ -14,6 +14,8 @@ bearer_scheme = HTTPBearer(auto_error=False)
 class CurrentUser(BaseModel):
     id: str
     email: str | None = None
+    name: str | None = None
+    avatar_url: str | None = None
 
 
 @lru_cache
@@ -54,4 +56,11 @@ def get_current_user(
     except jwt.PyJWTError as exc:
         raise unauthorized from exc
 
-    return CurrentUser(id=claims["sub"], email=claims.get("email"))
+    # Supabase copies the Google profile into user_metadata.
+    metadata = claims.get("user_metadata") or {}
+    return CurrentUser(
+        id=claims["sub"],
+        email=claims.get("email"),
+        name=metadata.get("full_name") or metadata.get("name"),
+        avatar_url=metadata.get("avatar_url") or metadata.get("picture"),
+    )
