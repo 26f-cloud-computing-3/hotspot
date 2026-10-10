@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { Icon } from "../../../components/Icon";
 import { loadScript } from "../loadScript";
 import { PlaceCard } from "../PlaceCard";
-import type { MapViewProps } from "../types";
+import type { LatLng, MapViewProps } from "../types";
 
 declare global {
   interface Window {
@@ -18,6 +19,7 @@ const SELECTED_MARKER_SIZE = { width: 38, height: 50 };
 const CARD_GAP = 8;
 // How far below the map center the selected marker sits, so its card stays in view.
 const CARD_ROOM = 96;
+const LOCATE_TIMEOUT_MS = 10000;
 
 export function KakaoMap({
   clientKey,
@@ -35,6 +37,9 @@ export function KakaoMap({
   const markersRef = useRef<any[]>([]);
   const [overlayContent] = useState(() => document.createElement("div"));
   const [isReady, setIsReady] = useState(false);
+  const [location, setLocation] = useState<LatLng | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const selectedPlace =
     places?.find((place) => place.id === selectedPlaceId) ?? null;
@@ -157,9 +162,67 @@ export function KakaoMap({
     return () => overlay.setMap(null);
   }, [isReady, overlayContent, selectedPlace]);
 
+  useEffect(() => {
+    if (!isReady || !mapRef.current || !location) return;
+
+    const dot = document.createElement("span");
+    dot.className = "location-dot";
+    const overlay = new window.kakao.maps.CustomOverlay({
+      map: mapRef.current,
+      position: new window.kakao.maps.LatLng(location.lat, location.lng),
+      content: dot,
+      xAnchor: 0.5,
+      yAnchor: 0.5,
+      zIndex: 0,
+    });
+
+    return () => overlay.setMap(null);
+  }, [isReady, location]);
+
+  const locate = () => {
+    if (!navigator.geolocation) {
+      setLocationError("이 브라우저에서는 현재 위치를 확인할 수 없습니다.");
+      return;
+    }
+    setIsLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setIsLocating(false);
+        setLocation({ lat: coords.latitude, lng: coords.longitude });
+        mapRef.current?.panTo(
+          new window.kakao.maps.LatLng(coords.latitude, coords.longitude),
+        );
+      },
+      (error) => {
+        setIsLocating(false);
+        setLocationError(
+          error.code === error.PERMISSION_DENIED
+            ? "위치 권한이 꺼져 있습니다. 브라우저 설정에서 허용해 주세요."
+            : "현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: LOCATE_TIMEOUT_MS },
+    );
+  };
+
   return (
-    <>
+    <div className="map-canvas">
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      {locationError && (
+        <p className="map-message" role="alert">
+          {locationError}
+        </p>
+      )}
+      <button
+        type="button"
+        className="map-locate"
+        onClick={locate}
+        disabled={!isReady || isLocating}
+        aria-label="현재 위치로 이동"
+      >
+        <Icon name="locate" />
+      </button>
       {selectedPlace &&
         createPortal(
           <div
@@ -170,6 +233,6 @@ export function KakaoMap({
           </div>,
           overlayContent,
         )}
-    </>
+    </div>
   );
 }
