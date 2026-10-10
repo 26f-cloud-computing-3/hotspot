@@ -7,10 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.auth import CurrentUser, get_current_user
 from app.core.db import get_db
+from app.core.users import get_registered_user
 from app.models.collection import Collection
 from app.models.collection_history import CollectionAction, CollectionHistory
+from app.models.user import User
 
 router = APIRouter(prefix="/api/collections", tags=["collections"])
 
@@ -37,13 +38,13 @@ class CollectionOut(BaseModel):
 
 @router.get("")
 def list_my_collections(
-    user: CurrentUser = Depends(get_current_user),
+    user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> list[CollectionOut]:
     """List the signed-in user's collections, newest first."""
     rows = db.scalars(
         select(Collection)
-        .where(Collection.owner_id == uuid.UUID(user.id))
+        .where(Collection.owner_id == user.id)
         .order_by(Collection.created_at.desc(), Collection.id)
     )
     return [CollectionOut.model_validate(row) for row in rows]
@@ -52,11 +53,11 @@ def list_my_collections(
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_collection(
     body: CollectionCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> CollectionOut:
     """Create a collection owned by the signed-in user (private unless stated otherwise)."""
-    collection = Collection(owner_id=uuid.UUID(user.id), name=body.name, is_public=body.is_public)
+    collection = Collection(owner_id=user.id, name=body.name, is_public=body.is_public)
     db.add(collection)
     db.flush()
     db.add(

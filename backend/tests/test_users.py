@@ -89,3 +89,8 @@ def test_falls_back_when_profile_is_missing(client):
     body = client.get("/api/me").json()
     assert (body["name"], body["handle"], body["avatar_url"]) == ("user", "user", None)
 
+
+def test_creating_a_collection_creates_the_user_row(client, engine):
+    _sign_in(ALICE, email="alice@example.com")
+    assert client.post("/api/collections", json={"name": "Cafes"}).status_code == 201
+    assert [row.handle for row in _rows(engine)] == ["alice"]
