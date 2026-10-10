@@ -62,6 +62,34 @@
 .place-pin {
   @apply flex items-center justify-center text-[color:var(--color-primary)];
 }
+/* Kakao's overlay container sets white-space: nowrap; let card text wrap. */
+.place-overlay {
+  @apply pointer-events-none whitespace-normal;
+}
+.place-card {
+  @apply pointer-events-auto w-[min(280px,70vw)] p-[var(--space-md)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)] text-[length:var(--font-small)] text-[color:var(--color-body)];
+}
+.place-card header {
+  @apply flex items-start gap-[var(--space-sm)];
+}
+.place-card header > div {
+  @apply min-w-0 flex-1;
+}
+.place-card strong {
+  @apply block overflow-hidden text-ellipsis whitespace-nowrap text-[length:var(--font-body)] text-[color:var(--color-ink)];
+}
+.place-card header span {
+  @apply block mt-[var(--space-xxs)] text-[length:var(--font-caption)] text-[color:var(--color-muted)];
+}
+.place-card header button {
+  @apply inline-flex items-center justify-center size-9 shrink-0 p-[var(--space-xs)] border-0 rounded-[var(--radius-full)] bg-transparent text-[color:var(--color-muted)] hover:bg-[var(--color-card)];
+}
+.place-card p {
+  @apply m-0 mt-[var(--space-sm)] break-keep;
+}
+.place-card a {
+  @apply inline-block mt-[var(--space-sm)] font-bold text-[color:var(--color-primary)] no-underline hover:underline;
+}
 .search-message {
   @apply m-0 p-[var(--space-lg)] rounded-[var(--radius-md)] bg-[var(--color-card)] text-[color:var(--color-muted)];
 }

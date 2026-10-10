@@ -19,6 +19,10 @@ export function PlaceSearch() {
     setSelectedPlaceId(place.id);
   }, []);
 
+  const clearSelection = useCallback(() => {
+    setSelectedPlaceId(null);
+  }, []);
+
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedQuery = query.trim();
@@ -74,6 +78,7 @@ export function PlaceSearch() {
           places={places}
           selectedPlaceId={selectedPlaceId}
           onPlaceSelect={selectPlace}
+          onPlaceClear={clearSelection}
         />
       </section>
 
