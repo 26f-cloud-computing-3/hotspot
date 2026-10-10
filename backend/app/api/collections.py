@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import CurrentUser, get_current_user
 from app.core.db import get_db
 from app.models.collection import Collection
+from app.models.collection_history import CollectionAction, CollectionHistory
 
 router = APIRouter(prefix="/api/collections", tags=["collections"])
 
@@ -57,6 +58,16 @@ def create_collection(
     """Create a collection owned by the signed-in user (private unless stated otherwise)."""
     collection = Collection(owner_id=uuid.UUID(user.id), name=body.name, is_public=body.is_public)
     db.add(collection)
+    db.flush()
+    db.add(
+        CollectionHistory(
+            actor_id=collection.owner_id,
+            collection_id=collection.id,
+            action=CollectionAction.CREATED,
+            collection_name=collection.name,
+            is_public=collection.is_public,
+        )
+    )
     db.commit()
     db.refresh(collection)
     return CollectionOut.model_validate(collection)

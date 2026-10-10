@@ -2,13 +2,15 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.core.auth import CurrentUser, get_current_user
 from app.core.config import Settings, get_settings
 from app.core.db import Base, get_engine
 from app.main import app
+from app.models.collection_history import CollectionHistory
 
 ALICE = str(uuid.uuid4())
 BOB = str(uuid.uuid4())
@@ -60,6 +62,30 @@ def test_create_public(client):
     res = client.post("/api/collections", json={"name": "Date spots", "is_public": True})
     assert res.status_code == 201
     assert res.json()["is_public"] is True
+
+
+def test_create_records_history(client, engine):
+    _sign_in(ALICE)
+    private = client.post("/api/collections", json={"name": "Cafes"}).json()
+    public = client.post("/api/collections", json={"name": "Bars", "is_public": True}).json()
+
+    with Session(engine) as db:
+        rows = db.scalars(select(CollectionHistory)).all()
+    recorded = {
+        (str(r.actor_id), str(r.collection_id), r.action, r.collection_name, r.is_public)
+        for r in rows
+    }
+    assert recorded == {
+        (ALICE, private["id"], "collection_created", "Cafes", False),
+        (ALICE, public["id"], "collection_created", "Bars", True),
+    }
+
+
+def test_rejected_create_records_no_history(client, engine):
+    _sign_in(ALICE)
+    client.post("/api/collections", json={"name": ""})
+    with Session(engine) as db:
+        assert db.scalars(select(CollectionHistory)).all() == []
 
 
 @pytest.mark.parametrize("name", ["", "   ", "x" * 51])
