@@ -13,6 +13,7 @@ class CollectionAction(StrEnum):
     RENAMED = "collection_renamed"
     PUBLISHED = "collection_published"
     UNPUBLISHED = "collection_unpublished"
+    DELETED = "collection_deleted"
 
 
 class CollectionHistory(Base):
