@@ -1,27 +1,27 @@
 import { useState } from "react";
-import { Icon } from "../components/Icon";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { AppShell } from "../components/layout/AppShell";
 import {
   NAVIGATION_ITEMS,
   type Page,
 } from "../components/layout/navigationItems";
 import { useAuth } from "../features/auth/AuthProvider";
-import { CollectionsPage } from "../features/collections/CollectionsPage";
-import { FollowersPage } from "../features/follows/FollowersPage";
-import { PlaceSearch } from "../features/map/PlaceSearch";
 import "./HomePage.css";
 
 export function HomePage() {
   const { signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
-  const [page, setPage] = useState<Page>("places");
   const [notice, setNotice] = useState("");
+  const navigateTo = useNavigate();
+  // The first path segment is the active tab, so a reload keeps it.
+  const segment = useLocation().pathname.split("/")[1];
   const activePage =
-    NAVIGATION_ITEMS.find((item) => item.id === page) ?? NAVIGATION_ITEMS[0];
+    NAVIGATION_ITEMS.find((item) => item.id === segment) ?? NAVIGATION_ITEMS[0];
+  const page = activePage.id;
   const title = activePage.label;
 
   function navigate(next: Page) {
-    setPage(next);
+    navigateTo(`/${next}`);
     setNotice("");
   }
   async function handleSignOut() {
@@ -59,19 +59,7 @@ export function HomePage() {
           {notice}
         </p>
       )}
-      {page === "places" ? (
-        <PlaceSearch />
-      ) : page === "collections" ? (
-        <CollectionsPage />
-      ) : page === "followers" ? (
-        <FollowersPage />
-      ) : (
-        <section className="empty-panel">
-          <Icon name={activePage.icon} />
-          <h2>{title}</h2>
-          <p>곧 이곳에서 만나보실 수 있어요.</p>
-        </section>
-      )}
+      <Outlet />
     </AppShell>
   );
 }
