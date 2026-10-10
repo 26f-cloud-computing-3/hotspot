@@ -14,7 +14,7 @@
 
 ## 설정
 
-1. Supabase SQL Editor에서 `0001_user_table.sql`, `0002_collection_table.sql`을 순서대로 실행
+1. Supabase SQL Editor에서 `backend/supabase/migrations/`의 SQL 파일을 번호 순서대로 실행
 2. Supabase 대시보드 → Connect → Connection string에서 URI 복사 (Render처럼 IPv4만 되는 환경은 Session/Transaction pooler 주소 사용)
 3. `backend/.env`와 배포 환경(Render)에 `DATABASE_URL` 설정. DB 비밀번호가 포함된 시크릿이므로 커밋 금지.
 
@@ -28,6 +28,14 @@
 | POST | `/api/collections` | 컬렉션 생성. `{ "name": "서울 카페", "is_public": false }` — 이름은 앞뒤 공백 제거 후 1~50자, 기본값 비공개 |
 
 응답 항목: `id`, `name`, `is_public`, `place_count`, `created_at`. 장소 저장이 아직 없어서 `place_count`는 항상 0이다.
+
+## 컬렉션 히스토리 (피드용)
+
+`public.collection_history`는 유저가 컬렉션에 한 일을 쌓아 두는 추가 전용(append-only) 로그이고, 피드는 이 테이블을 읽어서 만든다. 컬렉션을 바꾸는 API는 **같은 트랜잭션 안에서** 히스토리 행을 함께 넣는다.
+
+- `action`: 지금은 `collection_created`(컬렉션 생성)만 기록한다. 수정 · 삭제 · 장소 추가/제외는 해당 기능을 만들 때 `action` 체크 제약과 `CollectionAction`에 값을 추가한다.
+- `collection_name`, `is_public`: 행위 시점의 스냅샷. 컬렉션 이름이 바뀌거나 삭제돼도 히스토리를 읽을 수 있고(`collection_id`는 삭제 시 null), `is_public`은 그 시점에 팔로워가 볼 수 있었는지를 뜻한다.
+- 비공개 컬렉션에 대한 행위도 기록한다. 피드에 노출할지는 읽는 쪽(피드 API)에서 `is_public`으로 거른다.
 
 ## 테스트
 
