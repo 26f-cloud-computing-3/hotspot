@@ -83,6 +83,25 @@
 - 팔로우 자체는 `collection_history`에 기록하지 않는다. 피드는 `collection_history`를 `follow`와 조인(`actor_id = followee_id`, `follower_id = 나`, `is_public`)해서 만든다.
 - 목록은 아직 페이지네이션이 없다.
 
+## 최근 검색어
+
+`public.search_history`(`id`, `user_id`, `query`, `searched_at`)는 유저가 장소 찾기에서 검색한 검색어다. `(user_id, query)`가 유일해서 같은 검색어는 한 행만 있고, 다시 검색하면 `searched_at`만 갱신된다. SQL: `backend/supabase/migrations/0009_search_history_table.sql`.
+
+모두 `Authorization: Bearer <access_token>` 필요.
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/search-histories` | 내 최근 검색어 (최근 검색순, 최대 10개) |
+| POST | `/api/search-histories` | 검색어 기록. `{ "query": "성수 카페" }` — 앞뒤 공백 제거 후 1~100자(`GET /api/map/search`의 `query`와 같은 범위). 갱신된 목록을 그대로 돌려준다 |
+| DELETE | `/api/search-histories/{id}` | 검색어 하나 삭제. 204. 다른 유저의 것이거나 없는 id면 404 |
+| DELETE | `/api/search-histories` | 내 검색어 전체 삭제. 204 |
+
+응답 항목: `id`, `query`, `searched_at`.
+
+- 유저당 최대 10개만 보관한다. 기록할 때 10개를 넘으면 같은 트랜잭션에서 가장 오래전에 검색한 것부터 지운다.
+- 기록은 장소 검색 API가 아니라 프론트엔드가 한다: 검색이 성공하고 결과가 1곳 이상일 때만 `POST`를 호출한다. 결과가 없는 검색어(대개 오타)와 실패한 검색은 남기지 않는다.
+- 최근 검색어 API가 실패해도 장소 검색은 그대로 동작한다 (프론트엔드가 오류를 무시한다).
+
 ## 테스트
 
 DB를 쓰는 테스트(`backend/tests/conftest.py`의 `engine` 픽스처)는 인메모리 SQLite에 ORM 모델로 테이블을 만들어 돌린다. Postgres 전용 기능(제약 조건, RLS)은 테스트되지 않는다.
