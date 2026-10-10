@@ -19,6 +19,8 @@ interface MapViewContainerProps {
   selectedPlaceId?: string | null;
   onPlaceSelect?: (place: Place) => void;
   onPlaceClear?: () => void;
+  onMapClick?: (point: LatLng, radius: number) => void;
+  fitPlaces?: boolean;
   onPlaceSave?: (place: Place) => void;
 }
 
@@ -29,6 +31,8 @@ export function MapView({
   selectedPlaceId,
   onPlaceSelect,
   onPlaceClear,
+  onMapClick,
+  fitPlaces,
   onPlaceSave,
 }: MapViewContainerProps) {
   const [config, setConfig] = useState<MapConfig | null>(null);
@@ -53,6 +57,8 @@ export function MapView({
       selectedPlaceId={selectedPlaceId}
       onPlaceSelect={onPlaceSelect}
       onPlaceClear={onPlaceClear}
+      onMapClick={onMapClick}
+      fitPlaces={fitPlaces}
       onPlaceSave={onPlaceSave}
     />
   );

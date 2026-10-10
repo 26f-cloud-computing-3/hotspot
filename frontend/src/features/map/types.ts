@@ -38,6 +38,13 @@ export interface MapViewProps {
   selectedPlaceId?: string | null;
   onPlaceSelect?: (place: Place) => void;
   onPlaceClear?: () => void;
+  /**
+   * A tap on the map away from any marker, with no place selected. `radius` is
+   * how many meters around `point` the tap could have meant at the current zoom.
+   */
+  onMapClick?: (point: LatLng, radius: number) => void;
+  /** Zoom to show every place when none is selected. Defaults to true. */
+  fitPlaces?: boolean;
   /** When set, the selected place's card offers to save it into a collection. */
   onPlaceSave?: (place: Place) => void;
 }

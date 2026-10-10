@@ -1,20 +1,29 @@
-import { type FormEvent, useCallback, useState } from "react";
+import { type FormEvent, useCallback, useRef, useState } from "react";
 
 import { Icon } from "../../components/Icon";
 import { apiGet } from "../../lib/api";
 import { SavePlaceDialog } from "../collections/SavePlaceDialog";
 import { MapView } from "./MapView";
-import type { Place, PlaceSearchResult } from "./types";
+import type { LatLng, Place, PlaceSearchResult } from "./types";
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
+// Bounds on how far around a tapped point to look, whatever the zoom level.
+const MIN_NEARBY_RADIUS = 20;
+const MAX_NEARBY_RADIUS = 1000;
+
+/** Where the listed places came from: a text search, or a tap on the map. */
+type ResultSource = { kind: "search"; query: string } | { kind: "nearby" };
 
 export function PlaceSearch() {
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [source, setSource] = useState<ResultSource | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  // Only the latest search or nearby lookup may update the results.
+  const latestRequest = useRef(0);
   const [savingPlace, setSavingPlace] = useState<Place | null>(null);
 
   const selectPlace = useCallback((place: Place) => {
@@ -25,23 +34,55 @@ export function PlaceSearch() {
     setSelectedPlaceId(null);
   }, []);
 
+  const findNearby = useCallback(async (point: LatLng, radius: number) => {
+    const request = ++latestRequest.current;
+    const meters = Math.round(
+      Math.min(Math.max(radius, MIN_NEARBY_RADIUS), MAX_NEARBY_RADIUS),
+    );
+    setNotice("");
+    try {
+      const nearby = await apiGet<Place[]>(
+        `/api/map/nearby?lat=${point.lat}&lng=${point.lng}&radius=${meters}`,
+      );
+      if (request !== latestRequest.current) return;
+      if (nearby.length === 0) {
+        setNotice(
+          "이 위치 근처에서 장소를 찾지 못했습니다. 지도를 확대해 다시 눌러 보거나 검색해 보세요.",
+        );
+        return;
+      }
+      setError("");
+      setPlaces(nearby);
+      setSource({ kind: "nearby" });
+      // The nearest place is most likely the one that was tapped.
+      setSelectedPlaceId(nearby[0].id);
+    } catch {
+      if (request !== latestRequest.current) return;
+      setNotice("주변 장소를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+  }, []);
+
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedQuery = query.trim();
     if (!trimmedQuery || isSearching) return;
 
+    const request = ++latestRequest.current;
     setIsSearching(true);
     setError("");
+    setNotice("");
     setSelectedPlaceId(null);
     try {
       const result = await apiGet<PlaceSearchResult>(
         `/api/map/search?query=${encodeURIComponent(trimmedQuery)}&size=15`,
       );
+      if (request !== latestRequest.current) return;
       setPlaces(result.places);
-      setSubmittedQuery(trimmedQuery);
+      setSource({ kind: "search", query: trimmedQuery });
     } catch {
+      if (request !== latestRequest.current) return;
       setPlaces([]);
-      setSubmittedQuery(trimmedQuery);
+      setSource({ kind: "search", query: trimmedQuery });
       setError("장소를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSearching(false);
@@ -74,6 +115,12 @@ export function PlaceSearch() {
         </p>
       )}
 
+      {notice && (
+        <p className="search-message search-notice" role="status">
+          {notice}
+        </p>
+      )}
+
       <section className="map-panel" aria-label="장소 지도">
         <MapView
           center={SEOUL_CITY_HALL}
@@ -81,14 +128,24 @@ export function PlaceSearch() {
           selectedPlaceId={selectedPlaceId}
           onPlaceSelect={selectPlace}
           onPlaceClear={clearSelection}
+          onMapClick={findNearby}
+          fitPlaces={source?.kind !== "nearby"}
           onPlaceSave={setSavingPlace}
         />
       </section>
 
-      {submittedQuery && !error && (
+      {source && !error && (
         <div className="search-results">
           <p className="result-summary" role="status">
-            <strong>‘{submittedQuery}’</strong> 검색 결과 {places.length}곳
+            {source.kind === "search" ? (
+              <>
+                <strong>‘{source.query}’</strong> 검색 결과 {places.length}곳
+              </>
+            ) : (
+              <>
+                <strong>누른 위치 주변</strong> {places.length}곳
+              </>
+            )}
           </p>
           {places.length > 0 ? (
             <ol className="place-list">

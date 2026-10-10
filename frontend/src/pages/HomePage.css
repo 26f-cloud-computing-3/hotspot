@@ -117,6 +117,9 @@
 .search-error {
   @apply mb-[var(--space-lg)] text-[color:var(--color-error)];
 }
+.search-notice {
+  @apply mb-[var(--space-lg)];
+}
 .sr-only {
   @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
   clip: rect(0, 0, 0, 0);
