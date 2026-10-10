@@ -24,23 +24,41 @@
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
-| GET | `/api/collections` | 내 컬렉션 목록 (최신순) |
+| GET | `/api/collections` | 내 컬렉션 목록 (최신순). `?provider=kakao&place_id=1001`을 함께 주면 각 항목의 `contains_place`에 그 장소가 담겨 있는지가 들어간다 (둘 중 하나만 주면 422) |
 | POST | `/api/collections` | 컬렉션 생성. `{ "name": "서울 카페", "is_public": false }` — 이름은 앞뒤 공백 제거 후 1~50자, 기본값 비공개 |
-| PATCH | `/api/collections/{id}` | 내 컬렉션의 이름 · 공개 여부 수정. `{ "name": "성수 카페", "is_public": true }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 이름 규칙은 생성과 같다. 다른 유저의 컬렉션이거나 없는 id면 404 |
-| DELETE | `/api/collections/{id}` | 내 컬렉션 삭제. 성공 시 204(본문 없음). 다른 유저의 컬렉션이거나 없는 id면 404 |
+| PATCH | `/api/collections/{id}` | 내 컬렉션의 이름 · 공개 여부 수정. `{ "name": "성수 카페", "is_public": true }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 이름 규칙은 생성과 같다 |
+| DELETE | `/api/collections/{id}` | 내 컬렉션 삭제. 성공 시 204(본문 없음). 담긴 장소도 함께 지워진다 |
+| GET | `/api/collections/{id}/places` | 내 컬렉션에 담긴 장소 목록 (최근에 담은 순) |
+| POST | `/api/collections/{id}/places` | 장소 담기. 본문은 장소 검색 결과(`GET /api/map/search`의 `places` 항목) 그대로. 새로 담으면 201, 이미 담긴 장소면 200이고 아무것도 바뀌지 않는다 |
+| DELETE | `/api/collections/{id}/places/{provider}/{place_id}` | 장소 제외. 204. 담겨 있지 않은 장소여도 204 |
 
-응답 항목: `id`, `name`, `is_public`, `place_count`, `created_at`. 장소 저장이 아직 없어서 `place_count`는 항상 0이다.
+`{id}`가 다른 유저의 컬렉션이거나 없는 id면 모두 404다.
+
+컬렉션 응답 항목: `id`, `name`, `is_public`, `place_count`, `contains_place`(장소를 지정하지 않은 조회에서는 null), `created_at`.
+
+장소 응답 항목: `id`(provider의 장소 id), `provider`, `name`, `address`, `road_address`, `category`, `phone`, `url`, `lat`, `lng`, `added_at`. 검색 결과와 같은 모양이라 프론트엔드에서 같은 타입으로 다룬다.
+
+## 컬렉션에 담긴 장소
+
+`public.collection_place`가 컬렉션과 장소를 잇는다. 공용 장소 테이블은 없고, 행마다 담는 시점의 장소 정보(이름 · 주소 · 좌표 등)를 스냅샷으로 가진다.
+
+- 지도 provider에는 id로 장소를 다시 조회하는 API가 없어서, 백엔드는 클라이언트가 보낸 장소 정보를 검증할 수 없다. 장소 행을 유저끼리 공유하면 한 유저가 보낸 값이 다른 유저의 컬렉션에 보이게 되므로 컬렉션마다 따로 저장한다. 입력은 길이 · 좌표 범위만 제한하고, `url`은 링크로 렌더링되므로 `http(s)://`로 시작하는 값만 받는다.
+- 같은 장소인지는 `(provider, provider_place_id)`로 판단한다. `(collection_id, provider, provider_place_id)`가 유일하므로 한 컬렉션에 같은 장소가 두 번 담기지 않고, 한 장소를 여러 컬렉션에 담을 수는 있다.
+- 스냅샷은 담을 때 한 번 저장하고 갱신하지 않는다.
+- 컬렉션당 장소 수 상한은 없다.
 
 ## 컬렉션 히스토리 (피드용)
 
 `public.collection_history`는 유저가 컬렉션에 한 일을 쌓아 두는 추가 전용(append-only) 로그이고, 피드는 이 테이블을 읽어서 만든다. 컬렉션을 바꾸는 API는 **같은 트랜잭션 안에서** 히스토리 행을 함께 넣는다.
 
-- `action`: 지금 기록하는 값은 아래와 같다. 장소 추가/제외는 해당 기능을 만들 때 `action` 체크 제약과 `CollectionAction`에 값을 추가한다.
+- `action`: 지금 기록하는 값은 아래와 같다.
   - `collection_created` — 컬렉션 생성
   - `collection_renamed` — 이름 변경. `collection_name`에는 바뀐 이름이 남는다 (이전 이름은 앞선 행의 스냅샷에 있다).
   - `collection_published` / `collection_unpublished` — 공개 여부 변경.
   - `collection_deleted` — 컬렉션 삭제. 삭제 직전에 기록하므로 마지막 이름 · 공개 여부가 스냅샷으로 남고, 이후 FK(`on delete set null`)가 이 행과 이전 행들의 `collection_id`를 null로 바꾼다.
+  - `place_added` / `place_removed` — 장소 담기 / 제외. `place_name`에 장소 이름이 남는다. 이미 담긴 장소를 다시 담거나 없는 장소를 제외하는 요청은 기록하지 않는다.
   - 수정 요청에서는 값이 실제로 바뀐 항목만 기록하고, 현재 값을 다시 보내면 기록하지 않는다. 이름과 공개 여부를 한 번에 바꾸면 `collection_renamed` → 공개 여부 순으로 두 행이 남는다.
+- `place_name`: 장소에 대한 행위일 때만 채워지는 장소 이름 스냅샷. 그 밖의 행위에서는 null.
 - `collection_name`, `is_public`: 행위 시점의 스냅샷. 컬렉션 이름이 바뀌거나 삭제돼도 히스토리를 읽을 수 있고(`collection_id`는 삭제 시 null), `is_public`은 그 시점에 팔로워가 볼 수 있었는지를 뜻한다.
 - 비공개 컬렉션에 대한 행위도 기록한다. 피드에 노출할지는 읽는 쪽(피드 API)에서 `is_public`으로 거른다.
 
