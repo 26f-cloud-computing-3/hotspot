@@ -13,8 +13,11 @@
 .map-panel {
   @apply h-[min(56dvh,560px)] min-h-[var(--panel-min-height)] overflow-hidden border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-card)];
 }
+.place-search-box {
+  @apply relative mb-[var(--space-lg)];
+}
 .place-search-form {
-  @apply flex items-center gap-[var(--space-md)] h-[var(--control-size)] mb-[var(--space-lg)] px-[var(--space-lg)] rounded-[var(--radius-full)] bg-[var(--color-card)] text-[color:var(--color-muted)];
+  @apply flex items-center gap-[var(--space-md)] h-[var(--control-size)] px-[var(--space-lg)] rounded-[var(--radius-full)] bg-[var(--color-card)] text-[color:var(--color-muted)];
 }
 .place-search-form:focus-within {
   @apply bg-[var(--color-canvas)] outline-2 outline-[var(--color-focus)] outline-offset-2;
@@ -33,6 +36,36 @@
 }
 .place-search-form button:disabled {
   @apply bg-[var(--color-line)] text-[color:var(--color-muted)] cursor-not-allowed;
+}
+.search-history {
+  @apply absolute inset-x-0 top-full z-20 mt-[var(--space-sm)] p-[var(--space-sm)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)];
+}
+.search-history header {
+  @apply flex items-center justify-between gap-[var(--space-md)] py-[var(--space-xs)] pl-[var(--space-md)] pr-[var(--space-xs)];
+}
+.search-history h2 {
+  @apply m-0 text-[length:var(--font-small)] font-bold text-[color:var(--color-muted)];
+}
+.search-history-clear {
+  @apply min-h-9 px-[var(--space-sm)] border-0 rounded-[var(--radius-md)] bg-transparent text-[length:var(--font-small)] text-[color:var(--color-muted)] hover:bg-[var(--color-card)];
+}
+.search-history ul {
+  @apply m-0 p-0 list-none;
+}
+.search-history li {
+  @apply flex items-center gap-[var(--space-xs)];
+}
+.search-history-query {
+  @apply flex items-center gap-[var(--space-md)] min-w-0 flex-1 min-h-[var(--input-height)] px-[var(--space-md)] border-0 rounded-[var(--radius-md)] bg-transparent text-left text-[color:var(--color-ink)] hover:bg-[var(--color-card)];
+}
+.search-history-query .icon {
+  @apply shrink-0 text-[color:var(--color-muted)];
+}
+.search-history-query span {
+  @apply overflow-hidden text-ellipsis whitespace-nowrap;
+}
+.search-history-remove {
+  @apply inline-flex items-center justify-center size-9 shrink-0 p-[var(--space-xs)] border-0 rounded-[var(--radius-full)] bg-transparent text-[color:var(--color-muted)] hover:bg-[var(--color-card)];
 }
 .search-results {
   @apply mt-[var(--space-xl)];
