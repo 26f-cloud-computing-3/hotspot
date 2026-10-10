@@ -10,6 +10,9 @@ from app.core.db import Base
 
 class CollectionAction(StrEnum):
     CREATED = "collection_created"
+    RENAMED = "collection_renamed"
+    PUBLISHED = "collection_published"
+    UNPUBLISHED = "collection_unpublished"
 
 
 class CollectionHistory(Base):
