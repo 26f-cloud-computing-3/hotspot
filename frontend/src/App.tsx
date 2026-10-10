@@ -3,6 +3,7 @@ import { AuthCallback } from "./features/auth/AuthCallback";
 import { AuthProvider } from "./features/auth/AuthProvider";
 import { LoginPage } from "./features/auth/LoginPage";
 import { RequireAuth } from "./features/auth/RequireAuth";
+import { CollectionDetailPage } from "./features/collections/CollectionDetailPage";
 import { CollectionsPage } from "./features/collections/CollectionsPage";
 import { FollowersPage } from "./features/follows/FollowersPage";
 import { PlaceSearch } from "./features/map/PlaceSearch";
@@ -20,6 +21,10 @@ function App() {
             <Route element={<HomePage />}>
               <Route path="/places" element={<PlaceSearch />} />
               <Route path="/collections" element={<CollectionsPage />} />
+              <Route
+                path="/collections/:collectionId"
+                element={<CollectionDetailPage />}
+              />
               <Route path="/feed" element={<ComingSoon page="feed" />} />
               <Route path="/followers" element={<FollowersPage />} />
               <Route path="*" element={<Navigate to="/places" replace />} />

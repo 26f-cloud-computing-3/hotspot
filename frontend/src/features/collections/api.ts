@@ -31,6 +31,21 @@ export function listMyCollectionsForPlace(place: Place): Promise<Collection[]> {
   return apiGet<Collection[]>(`/api/collections?${params}`);
 }
 
+export function getCollection(id: string): Promise<Collection> {
+  return apiGet<Collection>(`/api/collections/${id}`);
+}
+
+/** The places saved in a collection, most recently added first. */
+export async function listCollectionPlaces(
+  collectionId: string,
+): Promise<Place[]> {
+  const places = await apiGet<Omit<Place, "distance">[]>(
+    `/api/collections/${collectionId}/places`,
+  );
+  // Saved places have no search center to be measured from.
+  return places.map((place) => ({ ...place, distance: null }));
+}
+
 export function createCollection(body: CollectionFields): Promise<Collection> {
   return apiPost<Collection>("/api/collections", body);
 }
