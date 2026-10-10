@@ -61,6 +61,7 @@ def test_requires_auth(client):
     )
     url = f"/api/collections/{uuid.uuid4()}/places"
     assert client.get(url).status_code == 401
+    assert client.get(url.removesuffix("/places")).status_code == 401
     assert client.post(url, json=CAFE).status_code == 401
     assert client.delete(f"{url}/kakao/1001").status_code == 401
 
@@ -195,6 +196,25 @@ def test_missing_collection_is_not_found(client):
     assert client.get(url).status_code == 404
     assert client.post(url, json=CAFE).status_code == 404
     assert client.delete(f"{url}/kakao/1001").status_code == 404
+
+
+def test_get_collection(client):
+    _sign_in(ALICE)
+    created = _create(client, "Cafes", is_public=True)
+    client.post(f"/api/collections/{created['id']}/places", json=CAFE)
+
+    res = client.get(f"/api/collections/{created['id']}")
+    assert res.status_code == 200
+    assert res.json() == {**created, "place_count": 1}
+
+
+def test_get_others_or_missing_collection_is_not_found(client):
+    _sign_in(BOB)
+    bobs = _create(client, "Bob's", is_public=True)
+
+    _sign_in(ALICE)
+    assert client.get(f"/api/collections/{bobs['id']}").status_code == 404
+    assert client.get(f"/api/collections/{uuid.uuid4()}").status_code == 404
 
 
 def test_place_count(client):
