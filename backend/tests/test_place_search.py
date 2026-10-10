@@ -170,6 +170,52 @@ def test_kakao_malformed_response_returns_502():
         app.dependency_overrides.clear()
 
 
+def test_kakao_nearby_merges_every_category_nearest_first():
+    seen = []
+    docs = {
+        "FD6": [
+            KAKAO_DOC | {"id": "1", "distance": "30"},
+            KAKAO_DOC | {"id": "2", "distance": "9"},
+        ],
+        "CE7": [KAKAO_DOC | {"id": "3", "distance": "12"}],
+    }
+
+    def handler(request):
+        params = dict(request.url.params)
+        seen.append(params)
+        return _kakao_response(docs.get(params["category_group_code"], []))
+
+    places = asyncio.run(_kakao(handler).nearby_places(36.3741, 127.3656, radius=40, size=2))
+
+    assert {params.pop("category_group_code") for params in seen} == set(
+        KakaoMapProvider.CATEGORY_GROUPS
+    )
+    assert all(
+        params
+        == {"x": "127.3656", "y": "36.3741", "radius": "40", "sort": "distance", "size": "15"}
+        for params in seen
+    )
+    assert [(place.id, place.distance) for place in places] == [("2", 9), ("3", 12)]
+
+
+def test_kakao_nearby_fails_when_a_category_fails():
+    def handler(request):
+        if request.url.params["category_group_code"] == "CE7":
+            return httpx.Response(500)
+        return _kakao_response([])
+
+    with pytest.raises(MapProviderError):
+        asyncio.run(_kakao(handler).nearby_places(36.3741, 127.3656))
+
+
+def test_kakao_nearby_missing_key_is_not_configured():
+    def handler(request):
+        raise AssertionError("must not call Kakao without a key")
+
+    with pytest.raises(MapProviderNotConfiguredError):
+        asyncio.run(_kakao(handler, key="").nearby_places(36.3741, 127.3656))
+
+
 class _FakeProvider(MapProvider):
     def __init__(self, error: Exception | None = None):
         self.error = error
@@ -188,6 +234,16 @@ class _FakeProvider(MapProvider):
             total=1,
             has_next=False,
         )
+
+    async def nearby_places(self, lat, lng, **kwargs):
+        self.calls.append(((lat, lng), kwargs))
+        if self.error:
+            raise self.error
+        return [
+            Place(
+                id="1", provider="fake", name="성심당", address="대전", lat=lat, lng=lng, distance=7
+            )
+        ]
 
 
 @pytest.fixture
@@ -304,3 +360,41 @@ def test_unimplemented_provider_returns_501():
         assert res.status_code == 501
     finally:
         app.dependency_overrides.clear()
+
+
+def test_nearby_returns_places(client, provider):
+    res = client.get("/api/map/nearby", params={"lat": 36.3741, "lng": 127.3656, "radius": 80})
+
+    assert res.status_code == 200
+    assert [(place["id"], place["distance"]) for place in res.json()] == [("1", 7)]
+    assert provider.calls == [((36.3741, 127.3656), {"radius": 80, "size": 15})]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"lat": 36.3},
+        {"lat": 91, "lng": 127.3},
+        {"lat": 36.3, "lng": 127.3, "radius": 0},
+        {"lat": 36.3, "lng": 127.3, "radius": 1001},
+        {"lat": 36.3, "lng": 127.3, "size": 16},
+    ],
+)
+def test_nearby_rejects_invalid_params(client, provider, params):
+    assert client.get("/api/map/nearby", params=params).status_code == 422
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize(
+    ("error", "status_code"),
+    [
+        (MapProviderNotConfiguredError("no key"), 503),
+        (MapProviderError("upstream 500"), 502),
+        (NotImplementedError("not yet"), 501),
+    ],
+)
+def test_nearby_maps_provider_errors(client, provider, error, status_code):
+    provider.error = error
+    res = client.get("/api/map/nearby", params={"lat": 36.3, "lng": 127.3})
+    assert res.status_code == status_code
