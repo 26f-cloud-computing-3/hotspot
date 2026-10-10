@@ -1,0 +1,54 @@
+@reference "../../index.css";
+
+.user-search {
+  @apply flex items-center gap-[var(--space-md)] h-[var(--control-size)] mb-[var(--space-lg)] px-[var(--space-lg)] rounded-[var(--radius-full)] bg-[var(--color-card)] text-[color:var(--color-muted)];
+}
+.user-search:focus-within {
+  @apply bg-[var(--color-canvas)] outline-2 outline-[var(--color-focus)] outline-offset-2;
+}
+.user-search input {
+  @apply min-w-0 flex-1 border-0 outline-none bg-transparent text-[length:var(--font-body)] text-[color:var(--color-ink)];
+}
+.user-search input::placeholder {
+  @apply text-[color:var(--color-muted)];
+}
+.follow-status {
+  @apply m-0 mb-[var(--space-md)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.follow-error {
+  @apply text-[color:var(--color-error)];
+}
+.follow-tabs {
+  @apply flex gap-[var(--space-sm)] mb-[var(--space-lg)];
+}
+.follow-tabs button {
+  @apply min-h-[var(--button-height)] px-[var(--space-lg)] border-0 rounded-[var(--radius-full)] bg-[var(--color-secondary)] text-[color:var(--color-ink)] text-[length:var(--font-small)] font-bold hover:bg-[var(--color-secondary-pressed)];
+}
+.follow-tabs button[aria-pressed="true"] {
+  @apply bg-[var(--color-ink)] text-[color:var(--color-on-primary)];
+}
+.user-list {
+  @apply grid grid-cols-[minmax(0,1fr)] gap-[var(--space-sm)] m-0 p-0 list-none;
+}
+.user-row {
+  @apply flex items-center gap-[var(--space-md)] p-[var(--space-md)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.user-avatar {
+  @apply flex items-center justify-center size-[var(--control-size)] shrink-0 rounded-[var(--radius-full)] object-cover bg-[var(--color-secondary)] text-[color:var(--color-muted)] font-bold;
+}
+.user-identity {
+  @apply min-w-0 flex-1;
+}
+.user-identity strong,
+.user-identity small {
+  @apply block overflow-hidden text-ellipsis whitespace-nowrap;
+}
+.user-identity strong {
+  @apply text-[color:var(--color-ink)];
+}
+.user-identity small {
+  @apply text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.user-row .button {
+  @apply shrink-0;
+}

@@ -7,6 +7,7 @@ import {
 } from "../components/layout/navigationItems";
 import { useAuth } from "../features/auth/AuthProvider";
 import { CollectionsPage } from "../features/collections/CollectionsPage";
+import { FollowersPage } from "../features/follows/FollowersPage";
 import { PlaceSearch } from "../features/map/PlaceSearch";
 import "./HomePage.css";
 
@@ -48,7 +49,9 @@ export function HomePage() {
             ? "나만의 핫스팟을 찾아보세요."
             : page === "collections"
               ? "좋아하는 장소를 테마별로 모아 보세요."
-              : "좋아하는 장소로 이어지는 공간"}
+              : page === "followers"
+                ? "친구를 찾아 팔로우해 보세요."
+                : "좋아하는 장소로 이어지는 공간"}
         </p>
       </div>
       {notice && (
@@ -60,6 +63,8 @@ export function HomePage() {
         <PlaceSearch />
       ) : page === "collections" ? (
         <CollectionsPage />
+      ) : page === "followers" ? (
+        <FollowersPage />
       ) : (
         <section className="empty-panel">
           <Icon name={activePage.icon} />
