@@ -1,0 +1,32 @@
+@reference "../../index.css";
+
+.feed-status {
+  @apply m-0 text-[color:var(--color-muted)];
+}
+.feed-list {
+  @apply grid grid-cols-[minmax(0,1fr)] gap-[var(--space-sm)] m-0 p-0 list-none;
+}
+.feed-card {
+  @apply flex items-start gap-[var(--space-md)] p-[var(--space-lg)] rounded-[var(--radius-md)] bg-[var(--color-card)];
+}
+.feed-card-body {
+  @apply grid min-w-0 flex-1 gap-[var(--space-xxs)];
+}
+.feed-card-body p {
+  @apply m-0 break-words;
+}
+.feed-card-body strong {
+  @apply text-[color:var(--color-ink)];
+}
+.feed-card-subject {
+  @apply text-[color:var(--color-ink)] font-bold;
+}
+.feed-card-body time {
+  @apply text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.feed-more {
+  @apply flex flex-col items-center gap-[var(--space-sm)] mt-[var(--space-lg)];
+}
+.feed-error {
+  @apply text-[length:var(--font-small)] text-[color:var(--color-error)];
+}
