@@ -12,6 +12,11 @@ function shortCategory(category: string | null) {
   return category?.split(">").at(-1)?.trim() || null;
 }
 
+// Naver has no lookup by another provider's place id, so link to a name search instead.
+function naverMapUrl(name: string) {
+  return `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
+}
+
 export function PlaceCard({ place, onClose, onSave }: PlaceCardProps) {
   const category = shortCategory(place.category);
   const address = place.road_address || place.address;
@@ -31,11 +36,16 @@ export function PlaceCard({ place, onClose, onSave }: PlaceCardProps) {
       </header>
       {address && <p>{address}</p>}
       {place.phone && <p>{place.phone}</p>}
-      {place.url && (
-        <a href={place.url} target="_blank" rel="noreferrer">
-          지도에서 자세히 보기
+      <nav className="place-card-links" aria-label="지도에서 자세히 보기">
+        {place.url && (
+          <a href={place.url} target="_blank" rel="noreferrer">
+            카카오맵에서 보기
+          </a>
+        )}
+        <a href={naverMapUrl(place.name)} target="_blank" rel="noreferrer">
+          네이버 지도에서 보기
         </a>
-      )}
+      </nav>
       {onSave && (
         <button type="button" className="place-card-save" onClick={onSave}>
           <Icon name="plus" />

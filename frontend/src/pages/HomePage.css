@@ -105,8 +105,11 @@
 .place-card p {
   @apply m-0 mt-[var(--space-sm)] break-keep;
 }
+.place-card-links {
+  @apply flex flex-wrap gap-x-[var(--space-md)] gap-y-[var(--space-xs)] mt-[var(--space-sm)];
+}
 .place-card a {
-  @apply inline-block mt-[var(--space-sm)] font-bold text-[color:var(--color-primary)] no-underline hover:underline;
+  @apply font-bold text-[color:var(--color-primary)] no-underline hover:underline;
 }
 .place-card-save {
   @apply flex items-center justify-center gap-[var(--space-xs)] w-full min-h-[var(--button-height)] mt-[var(--space-md)] px-[var(--space-lg)] border-0 rounded-[var(--radius-md)] bg-[var(--color-primary)] text-[color:var(--color-on-primary)] font-bold leading-none hover:bg-[var(--color-primary-pressed)];
