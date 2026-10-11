@@ -51,6 +51,8 @@ def test_requires_auth(client):
         supabase_url="https://example.supabase.co"
     )
     assert client.get("/api/users?q=a").status_code == 401
+    assert client.get(f"/api/users/{BOB}").status_code == 401
+    assert client.get(f"/api/users/{BOB}/collections").status_code == 401
     assert client.get("/api/follows/following").status_code == 401
     assert client.get("/api/follows/followers").status_code == 401
     assert client.put(f"/api/follows/{BOB}").status_code == 401
@@ -146,3 +148,61 @@ def test_search_needs_a_term(client):
     _sign_in(ALICE)
     assert _handles(client.get("/api/users?q=%20%20")) == []
     assert client.get("/api/users").status_code == 422
+
+
+def _collection(client, name, is_public):
+    res = client.post("/api/collections", json={"name": name, "is_public": is_public})
+    return res.json()
+
+
+def test_profile(client):
+    _sign_in(ALICE)
+    assert client.get(f"/api/users/{BOB}").json() == {
+        "id": BOB,
+        "name": "Bob Lee",
+        "handle": "bob",
+        "avatar_url": None,
+        "is_following": False,
+        "is_me": False,
+        "public_collection_count": 0,
+    }
+    client.put(f"/api/follows/{BOB}")
+    assert client.get(f"/api/users/{BOB}").json()["is_following"] is True
+
+
+def test_own_profile(client):
+    _sign_in(ALICE)
+    body = client.get(f"/api/users/{ALICE}").json()
+    assert (body["handle"], body["is_me"], body["is_following"]) == ("alice", True, False)
+
+
+def test_unknown_profile_is_not_found(client):
+    _sign_in(ALICE)
+    assert client.get(f"/api/users/{uuid.uuid4()}").status_code == 404
+    assert client.get(f"/api/users/{uuid.uuid4()}/collections").status_code == 404
+    assert client.get("/api/users/not-a-uuid").status_code == 422
+
+
+def test_profile_lists_only_public_collections(client):
+    _sign_in(BOB)
+    cafes = _collection(client, "Cafes", True)
+    _collection(client, "Secret", False)
+    _sign_in(CAROL)
+    _collection(client, "Carol's", True)
+
+    # Alice follows nobody: public collections are open to every signed-in user.
+    _sign_in(ALICE)
+    assert client.get(f"/api/users/{BOB}").json()["public_collection_count"] == 1
+    res = client.get(f"/api/users/{BOB}/collections")
+    assert res.status_code == 200
+    assert res.json() == [{**cafes, "is_owner": False}]
+    assert res.json()[0]["owner"]["handle"] == "bob"
+
+
+def test_own_profile_leaves_out_private_collections_too(client):
+    _sign_in(BOB)
+    _collection(client, "Cafes", True)
+    _collection(client, "Secret", False)
+    assert client.get(f"/api/users/{BOB}").json()["public_collection_count"] == 1
+    res = client.get(f"/api/users/{BOB}/collections")
+    assert [(c["name"], c["is_owner"]) for c in res.json()] == [("Cafes", True)]

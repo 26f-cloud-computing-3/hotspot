@@ -26,16 +26,16 @@
 |--------|------|------|
 | GET | `/api/collections` | 내 컬렉션 목록 (최신순). `?provider=kakao&place_id=1001`을 함께 주면 각 항목의 `contains_place`에 그 장소가 담겨 있는지가 들어간다 (둘 중 하나만 주면 422) |
 | POST | `/api/collections` | 컬렉션 생성. `{ "name": "서울 카페", "is_public": false }` — 이름은 앞뒤 공백 제거 후 1~50자, 기본값 비공개 |
-| GET | `/api/collections/{id}` | 내 컬렉션 하나 조회 (컬렉션 상세 화면용) |
+| GET | `/api/collections/{id}` | 컬렉션 하나 조회 (컬렉션 상세 화면용). 내 컬렉션이거나 다른 유저의 **공개** 컬렉션 |
 | PATCH | `/api/collections/{id}` | 내 컬렉션의 이름 · 공개 여부 수정. `{ "name": "성수 카페", "is_public": true }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 이름 규칙은 생성과 같다 |
 | DELETE | `/api/collections/{id}` | 내 컬렉션 삭제. 성공 시 204(본문 없음). 담긴 장소도 함께 지워진다 |
-| GET | `/api/collections/{id}/places` | 내 컬렉션에 담긴 장소 목록 (최근에 담은 순) |
+| GET | `/api/collections/{id}/places` | 컬렉션에 담긴 장소 목록 (최근에 담은 순). 조회 범위는 위와 같다 |
 | POST | `/api/collections/{id}/places` | 장소 담기. 본문은 장소 검색 결과(`GET /api/map/search`의 `places` 항목) 그대로. 새로 담으면 201, 이미 담긴 장소면 200이고 아무것도 바뀌지 않는다 |
 | DELETE | `/api/collections/{id}/places/{provider}/{place_id}` | 장소 제외. 204. 담겨 있지 않은 장소여도 204 |
 
-`{id}`가 다른 유저의 컬렉션이거나 없는 id면 모두 404다.
+없는 id와 다른 유저의 비공개 컬렉션은 모두 404다. 다른 유저의 공개 컬렉션은 위 두 조회만 되고, 수정 · 삭제 · 장소 담기 · 제외는 404다(조회는 `_get_visible_collection`, 변경은 `_get_own_collection`으로 나뉜다). 팔로우 여부는 조회 권한과 무관하다.
 
-컬렉션 응답 항목: `id`, `name`, `is_public`, `place_count`, `contains_place`(장소를 지정하지 않은 조회에서는 null), `created_at`.
+컬렉션 응답 항목: `id`, `name`, `is_public`, `place_count`, `owner`(`id`, `name`, `handle`, `avatar_url`), `is_owner`(로그인한 유저가 소유자인지), `contains_place`(장소를 지정하지 않은 조회에서는 null), `created_at`.
 
 장소 응답 항목: `id`(provider의 장소 id), `provider`, `name`, `address`, `road_address`, `category`, `phone`, `url`, `lat`, `lng`, `added_at`. 검색 결과와 같은 모양이라 프론트엔드에서 같은 타입으로 다룬다.
 
@@ -72,6 +72,8 @@
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
 | GET | `/api/users?q=` | 유저 검색. 핸들은 접두 일치, 이름은 부분 일치 (대소문자 무시, 앞의 `@`는 무시). 본인 제외, 핸들순 최대 20명 |
+| GET | `/api/users/{user_id}` | 유저 프로필. 아래 응답 항목에 `is_me`(본인 프로필인지), `public_collection_count`가 더해진다. 없는 유저면 404 |
+| GET | `/api/users/{user_id}/collections` | 그 유저의 **공개** 컬렉션 목록 (최신순, 컬렉션 응답 항목과 같은 모양). 본인 id로 요청해도 공개 컬렉션만 나온다. 없는 유저면 404 |
 | PUT | `/api/follows/{user_id}` | 팔로우. 이미 팔로우 중이어도 204. 본인이면 400, 없는 유저면 404 |
 | DELETE | `/api/follows/{user_id}` | 언팔로우. 팔로우 중이 아니어도 204 |
 | GET | `/api/follows/following` | 내가 팔로우한 유저 (최근 팔로우순) |
@@ -79,7 +81,9 @@
 
 응답 항목: `id`, `name`, `handle`, `avatar_url`, `is_following`(내가 그 유저를 팔로우 중인지 — 팔로워 목록에서 맞팔 여부를 알 수 있다).
 
-- 목록 API는 로그인한 유저 본인 것만 돌려준다. 다른 유저의 팔로워/팔로잉 목록을 조회하는 API는 의도적으로 두지 않았다 (`docs/features.md` 4번).
+- 유저는 핸들이 아니라 id로 식별한다. 핸들은 화면 표시와 검색에만 쓴다.
+- 프로필과 공개 컬렉션 목록은 팔로우하지 않은 유저 것도 볼 수 있다. 프로필에는 팔로워/팔로잉 수를 넣지 않는다.
+- 팔로워/팔로잉 목록 API는 로그인한 유저 본인 것만 돌려준다. 다른 유저의 팔로워/팔로잉 목록을 조회하는 API는 의도적으로 두지 않았다 (`docs/features.md` 4번).
 - 팔로우 자체는 `collection_history`에 기록하지 않는다. 피드는 `collection_history`를 `follow`와 조인(`actor_id = followee_id`, `follower_id = 나`, `is_public`)해서 만든다.
 - 목록은 아직 페이지네이션이 없다.
 
