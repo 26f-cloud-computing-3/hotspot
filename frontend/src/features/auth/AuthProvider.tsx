@@ -24,6 +24,8 @@ interface AuthContextValue {
   user: User | null;
   /** Null until it has loaded, and while signed out. */
   me: Me | null;
+  /** Replaces `me` after the user edits their profile. */
+  setMe: (me: Me) => void;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       me,
+      setMe,
       loading,
       signInWithGoogle: async () => {
         const { error } = await supabase.auth.signInWithOAuth({

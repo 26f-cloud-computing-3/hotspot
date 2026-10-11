@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
 import { ApiError } from "../../lib/api";
@@ -11,6 +11,7 @@ import {
   type UserProfile,
   unfollow,
 } from "./api";
+import { ProfileDialog } from "./ProfileDialog";
 import { UserAvatar } from "./UserAvatar";
 import "../collections/CollectionsPage.css";
 import "../collections/CollectionDetailPage.css";
@@ -21,13 +22,14 @@ type LoadError = "missing" | "failed";
 /** A user and the collections they have made public; the same view for every visitor. */
 export function UserProfilePage() {
   const { userId = "" } = useParams();
-  const { me } = useAuth();
+  const { me, setMe } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [collections, setCollections] = useState<Collection[] | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const editDialog = useRef<HTMLDialogElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
   useEffect(() => {
@@ -127,9 +129,18 @@ export function UserProfilePage() {
           <small>@{profile.handle}</small>
         </span>
         {profile.is_me ? (
-          <Link className="button button-secondary" to="/collections">
-            내 컬렉션 관리
-          </Link>
+          <span className="profile-actions">
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => editDialog.current?.showModal()}
+            >
+              프로필 수정
+            </button>
+            <Link className="button button-secondary" to="/collections">
+              내 컬렉션 관리
+            </Link>
+          </span>
         ) : (
           <button
             type="button"
@@ -182,6 +193,18 @@ export function UserProfilePage() {
             ))}
           </ul>
         </>
+      )}
+      {profile.is_me && me && (
+        <ProfileDialog
+          // Remounts with the saved values as the fields' starting point.
+          key={`${me.name}\n${me.handle}`}
+          dialogRef={editDialog}
+          me={me}
+          onSaved={(saved) => {
+            setMe(saved);
+            setProfile({ ...profile, name: saved.name, handle: saved.handle });
+          }}
+        />
       )}
     </section>
   );

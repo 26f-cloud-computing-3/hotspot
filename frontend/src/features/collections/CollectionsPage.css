@@ -60,6 +60,9 @@
 .field {
   @apply grid gap-[var(--space-sm)] text-[length:var(--font-small)] font-bold;
 }
+.field-hint {
+  @apply text-[length:var(--font-small)] font-normal text-[color:var(--color-muted)];
+}
 .text-input {
   @apply w-full h-[var(--input-height)] py-0 px-[var(--space-lg)] border-[length:var(--border-width)] border-solid border-[var(--color-ash)] rounded-[var(--radius-md)] bg-[var(--color-canvas)] text-[color:var(--color-ink)] font-normal;
 }
