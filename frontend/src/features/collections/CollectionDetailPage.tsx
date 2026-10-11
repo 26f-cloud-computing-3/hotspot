@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
-import { ApiError } from "../../lib/api";
+import { isNotFound } from "../../lib/api";
+import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { useActivePage } from "../../pages/HomePage";
 import { UserAvatar } from "../follows/UserAvatar";
 import { MapView } from "../map/MapView";
 import type { Place } from "../map/types";
 import {
-  type Collection,
   getCollection,
+  invalidateCollections,
   listCollectionPlaces,
   removePlaceFromCollection,
 } from "./api";
@@ -23,48 +25,30 @@ function placeKey(place: Place) {
   return `${place.provider}-${place.id}`;
 }
 
-type LoadError = "missing" | "failed";
-
 /** My collection, which I can edit, or someone else's public one, which I can only read. */
 export function CollectionDetailPage() {
   const { collectionId = "" } = useParams();
   // Set by the profile screen, so the way back is known before (or without) the load.
   const fromOwnerId: string | undefined = useLocation().state?.ownerId;
-  const [collection, setCollection] = useState<Collection | null>(null);
-  const [places, setPlaces] = useState<Place[] | null>(null);
-  const [loadError, setLoadError] = useState<LoadError | null>(null);
-  const [attempt, setAttempt] = useState(0);
+  const queryClient = useQueryClient();
+  const collectionQuery = useQuery({
+    queryKey: queryKeys.collections.detail(collectionId),
+    queryFn: () => getCollection(collectionId),
+  });
+  const placesQuery = useQuery({
+    queryKey: queryKeys.collections.places(collectionId),
+    queryFn: () => listCollectionPlaces(collectionId),
+  });
+  const collection = collectionQuery.data;
+  const places = placesQuery.data;
+  // Private and deleted collections look the same from here: both are 404.
+  // One that went away since it was last loaded must stop being shown, too.
+  const missing =
+    isNotFound(collectionQuery.error) || isNotFound(placesQuery.error);
   const [savingPlace, setSavingPlace] = useState<Place | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [removingKeys, setRemovingKeys] = useState<string[]>([]);
   const [error, setError] = useState("");
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
-  useEffect(() => {
-    let cancelled = false;
-    setLoadError(null);
-    Promise.all([
-      getCollection(collectionId),
-      listCollectionPlaces(collectionId),
-    ])
-      .then(([loadedCollection, loadedPlaces]) => {
-        if (cancelled) return;
-        setCollection(loadedCollection);
-        setPlaces(loadedPlaces);
-      })
-      .catch((cause) => {
-        if (cancelled) return;
-        // Private and deleted collections look the same from here: both are 404.
-        // 422 is an id that is not a UUID, which no collection can have.
-        const missing =
-          cause instanceof ApiError &&
-          (cause.status === 404 || cause.status === 422);
-        setLoadError(missing ? "missing" : "failed");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [collectionId, attempt]);
 
   const readOnly = collection ? !collection.is_owner : fromOwnerId != null;
   useActivePage(readOnly ? "followers" : null);
@@ -83,9 +67,11 @@ export function CollectionDetailPage() {
     setError("");
     try {
       await removePlaceFromCollection(collectionId, place);
-      setPlaces((items) =>
-        (items ?? []).filter((item) => placeKey(item) !== key),
+      queryClient.setQueryData<Place[]>(
+        queryKeys.collections.places(collectionId),
+        (items) => items?.filter((item) => placeKey(item) !== key),
       );
+      void invalidateCollections(queryClient);
       setSelectedPlaceId((id) => (id === place.id ? null : id));
     } catch {
       setError(
@@ -109,12 +95,12 @@ export function CollectionDetailPage() {
     </Link>
   );
 
-  if (loadError) {
+  if (missing || loadFailed(collectionQuery, placesQuery)) {
     return (
       <>
         {backLink}
         <section className="empty-panel" role="alert">
-          {loadError === "missing" ? (
+          {missing ? (
             <p>비공개이거나 삭제된 컬렉션입니다.</p>
           ) : (
             <>
@@ -122,7 +108,7 @@ export function CollectionDetailPage() {
               <button
                 type="button"
                 className="button button-secondary"
-                onClick={() => setAttempt((value) => value + 1)}
+                onClick={() => retryLoad(collectionQuery, placesQuery)}
               >
                 다시 시도
               </button>
@@ -132,7 +118,7 @@ export function CollectionDetailPage() {
       </>
     );
   }
-  if (collection === null || places === null) {
+  if (collection === undefined || places === undefined) {
     return (
       <>
         {backLink}
