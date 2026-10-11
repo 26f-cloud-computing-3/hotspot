@@ -12,6 +12,9 @@
 .collection-detail-header p {
   @apply ml-auto;
 }
+.collection-detail-header .collection-owner {
+  @apply basis-full flex-none self-start;
+}
 .collection-detail .form-error {
   @apply mb-[var(--space-lg)];
 }
