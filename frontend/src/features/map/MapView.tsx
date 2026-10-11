@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { apiGet } from "../../lib/api";
+import { queryKeys } from "../../lib/query";
 import { GoogleMap } from "./providers/GoogleMap";
 import { KakaoMap } from "./providers/KakaoMap";
 import { NaverMap } from "./providers/NaverMap";
@@ -37,16 +38,14 @@ export function MapView({
   onPlaceSave,
   startAtCurrentLocation,
 }: MapViewContainerProps) {
-  const [config, setConfig] = useState<MapConfig | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The provider is fixed by the backend's configuration, so one answer lasts the visit.
+  const { data: config, error } = useQuery({
+    queryKey: queryKeys.mapConfig,
+    queryFn: () => apiGet<MapConfig>("/api/map/config"),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
 
-  useEffect(() => {
-    apiGet<MapConfig>("/api/map/config")
-      .then(setConfig)
-      .catch((err) => setError(err.message));
-  }, []);
-
-  if (error) return <div>지도 설정을 불러오지 못했습니다: {error}</div>;
+  if (error) return <div>지도 설정을 불러오지 못했습니다: {error.message}</div>;
   if (!config) return <div>지도를 불러오는 중...</div>;
 
   const Provider = PROVIDERS[config.provider];

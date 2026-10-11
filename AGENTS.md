@@ -60,6 +60,14 @@ The active map provider is a **backend** decision, not a frontend one: `MAP_PROV
 - Frontend side: `frontend/src/features/map/MapView.tsx` fetches `/api/map/config`, then renders the matching component from `frontend/src/features/map/providers/` via the `PROVIDERS` lookup map. Every provider component implements `MapViewProps` (`frontend/src/features/map/types.ts`).
 - To add/change a provider: implement `MapProvider` on the backend, add/complete the matching component under `frontend/src/features/map/providers/` satisfying `MapViewProps`, and wire it into `PROVIDERS` in `MapView.tsx`. No other call site needs to change.
 
+### Server data on the frontend (TanStack Query)
+
+Screens read server data with `useQuery`/`useInfiniteQuery` rather than fetching in a `useEffect`. `frontend/src/lib/query.ts` owns the shared `queryClient`, every cache key (`queryKeys`), and the `loadFailed`/`retryLoad` helpers for the "불러오지 못했습니다 · 다시 시도" panels. The fetch functions stay in each feature's `api.ts` and are passed as `queryFn`.
+
+- Add a key to `queryKeys` instead of writing one inline, so a prefix can invalidate the whole group.
+- After a change, update or invalidate what it affects: `invalidateCollections` (`features/collections/api.ts`) for my collections, `useToggleFollow` (`features/follows/useToggleFollow.ts`) for follows.
+- 4xx answers are never retried, and the cache is cleared when the signed-in user changes (`AuthProvider`).
+
 ### Persistence (backend connects to Postgres directly)
 
 The backend talks to the Supabase Postgres database over a direct connection (`DATABASE_URL`, SQLAlchemy 2 + psycopg 3, sync sessions). `backend/app/core/db.py` provides the `get_db` dependency; ORM models live in `backend/app/models/`. The schema is owned by hand-written SQL in `backend/supabase/migrations/` (run in the Supabase SQL Editor) — ORM models only mirror it. This connection bypasses row level security, so **every query must scope by the signed-in user in backend code**. Use `Depends(get_registered_user)` (`backend/app/core/users.py`) for that: it returns the user's row and creates it on their first request — there is no signup trigger. See `docs/database.md`.
