@@ -19,7 +19,7 @@
 `public."user"` (id = `auth.users.id`, name, handle, avatar_url, created_at). 별도 가입 절차는 없고, **백엔드가 로그인한 유저의 첫 요청 때 행을 만든다** (`backend/app/core/users.py`의 `get_registered_user`).
 
 - 이름 · 프로필 사진은 access token의 `user_metadata`(Google 프로필)에서, handle은 이메일 local-part에서 만든다. handle이 이미 쓰이고 있으면 4자리 suffix가 붙는다.
-- 행이 이미 있으면 이름 · 프로필 사진을 토큰의 Google 프로필에 맞춰 갱신한다 (토큰에 값이 없으면 저장된 값을 유지). handle은 유저를 가리키는 고정 식별자라 바꾸지 않는다.
+- 행이 이미 있으면 프로필 사진만 토큰의 Google 프로필에 맞춰 갱신한다 (토큰에 값이 없으면 저장된 값을 유지). 이름과 handle은 가입 후에는 유저가 직접 바꾸는 값이라(`PATCH /api/me`) Google 프로필을 따라가지 않는다.
 - 프론트는 로그인 직후 `GET /api/me`를 호출해서, 로그인한 계정은 모두 행을 갖도록 한다 (`AuthProvider.tsx`).
 - user 테이블을 참조하는 행을 쓰는 엔드포인트는 `get_current_user` 대신 `Depends(get_registered_user)`를 쓴다. 토큰 검증만 필요하면 `get_current_user`로 충분하다.
 

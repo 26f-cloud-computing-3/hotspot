@@ -19,16 +19,13 @@ def _handle_base(user: CurrentUser) -> str:
     return re.sub(r"[^a-z0-9_]", "", local_part.lower()) or "user"
 
 
-def _sync_profile(db: Session, row: User, user: CurrentUser) -> None:
-    """Follow changes to the Google profile. The handle is the user's stable id, so it stays."""
-    changes = {
-        field: value
-        for field in ("name", "avatar_url")
-        if (value := getattr(user, field)) and value != getattr(row, field)
-    }
-    if changes:
-        for field, value in changes.items():
-            setattr(row, field, value)
+def _sync_avatar(db: Session, row: User, user: CurrentUser) -> None:
+    """Follow changes to the Google avatar.
+
+    The name and handle are the user's to edit after signup (PATCH /api/me), so they stay.
+    """
+    if user.avatar_url and user.avatar_url != row.avatar_url:
+        row.avatar_url = user.avatar_url
         db.commit()
 
 
@@ -39,7 +36,7 @@ def get_registered_user(
     """Return the signed-in user's row, creating it on their first request.
 
     There is no signup step: the name and avatar come from the Google identity carried
-    by the access token and are kept in sync with it. Use this instead of
+    by the access token. Only the avatar is kept in sync with it afterwards. Use this instead of
     get_current_user wherever rows reference the user table.
     """
     try:
@@ -49,7 +46,7 @@ def get_registered_user(
     base = _handle_base(user)
     for _ in range(_HANDLE_ATTEMPTS):
         if (row := db.get(User, user_id)) is not None:
-            _sync_profile(db, row, user)
+            _sync_avatar(db, row, user)
             return row
         taken = db.scalar(select(User.id).where(User.handle == base)) is not None
         row = User(

@@ -18,6 +18,20 @@
 2. Supabase 대시보드 → Connect → Connection string에서 URI 복사 (Render처럼 IPv4만 되는 환경은 Session/Transaction pooler 주소 사용)
 3. `backend/.env`와 배포 환경(Render)에 `DATABASE_URL` 설정. DB 비밀번호가 포함된 시크릿이므로 커밋 금지.
 
+## 내 프로필 API
+
+모두 `Authorization: Bearer <access_token>` 필요. 코드: `backend/app/api/me.py`.
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/me` | 내 프로필 (`id`, `email`, `name`, `handle`, `avatar_url`). 첫 요청에서 유저 행을 만든다 |
+| PATCH | `/api/me` | 이름 · 핸들 수정. `{ "name": "김앨리스", "handle": "alice_k" }` — 보낸 필드만 바뀐다(생략하거나 null이면 유지). 다른 유저가 쓰는 핸들이면 409 |
+
+- 이름: 앞뒤 공백 제거 후 1~50자.
+- 핸들: 영문 · 숫자 · 밑줄(`_`) 3~30자. 대문자로 보내도 소문자로 저장한다. 가입 때 이메일에서 만든 핸들은 이 길이 규칙을 벗어날 수 있고, 새로 바꿀 때만 규칙을 적용한다(현재 핸들을 그대로 다시 보내는 것도 규칙을 벗어나면 422이므로, 프론트엔드는 바뀐 필드만 보낸다).
+- 핸들 변경 이력은 남기지 않고, 예전 핸들은 바로 다른 유저가 쓸 수 있다. 유저는 id로 식별하므로 팔로우 · 컬렉션 · 프로필 URL은 영향을 받지 않는다.
+- 프로필 사진은 수정할 수 없고 Google 프로필을 따라간다.
+
 ## 컬렉션 API
 
 모두 `Authorization: Bearer <access_token>` 필요.
