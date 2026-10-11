@@ -44,36 +44,22 @@ def test_first_request_creates_user_row(client, engine):
     assert [str(row.id) for row in _rows(engine)] == [ALICE]
 
 
-def test_later_requests_follow_the_google_profile(client, engine):
+def test_later_requests_follow_only_the_google_avatar(client, engine):
     _sign_in(ALICE, email="alice@example.com", name="Alice", avatar_url="https://a/old.png")
     client.get("/api/me")
     _sign_in(ALICE, email="other@example.com", name="Renamed", avatar_url="https://a/new.png")
     body = client.get("/api/me").json()
-    assert (body["name"], body["avatar_url"]) == ("Renamed", "https://a/new.png")
-    # The handle identifies the user, so it does not follow the email.
-    assert body["handle"] == "alice"
+    # The name and handle are the user's own to edit, so they do not follow Google.
+    assert (body["name"], body["handle"]) == ("Alice", "alice")
+    assert body["avatar_url"] == "https://a/new.png"
     assert len(_rows(engine)) == 1
 
 
-def test_missing_profile_fields_keep_stored_values(client):
+def test_missing_avatar_keeps_the_stored_one(client):
     _sign_in(ALICE, email="alice@example.com", name="Alice", avatar_url="https://a/p.png")
     client.get("/api/me")
     _sign_in(ALICE, email="alice@example.com")
-    body = client.get("/api/me").json()
-    assert (body["name"], body["avatar_url"]) == ("Alice", "https://a/p.png")
-
-
-def test_existing_row_is_filled_in_from_the_token(client, engine):
-    with Session(engine) as db:
-        db.add(User(id=uuid.UUID(ALICE), name="placeholder", handle="custom", avatar_url=None))
-        db.commit()
-    _sign_in(ALICE, email="alice@example.com", name="Alice Kim", avatar_url="https://a/p.png")
-    body = client.get("/api/me").json()
-    assert (body["name"], body["handle"], body["avatar_url"]) == (
-        "Alice Kim",
-        "custom",
-        "https://a/p.png",
-    )
+    assert client.get("/api/me").json()["avatar_url"] == "https://a/p.png"
 
 
 def test_taken_handle_gets_a_suffix(client, engine):
@@ -94,3 +80,59 @@ def test_creating_a_collection_creates_the_user_row(client, engine):
     _sign_in(ALICE, email="alice@example.com")
     assert client.post("/api/collections", json={"name": "Cafes"}).status_code == 201
     assert [row.handle for row in _rows(engine)] == ["alice"]
+
+
+def test_update_me_changes_name_and_handle(client, engine):
+    _sign_in(ALICE, email="alice@example.com", name="Alice")
+    res = client.patch("/api/me", json={"name": "  Alice Kim ", "handle": " Alice_K "})
+    assert res.status_code == 200
+    assert (res.json()["name"], res.json()["handle"]) == ("Alice Kim", "alice_k")
+    # The edit survives later requests that still carry the Google name.
+    body = client.get("/api/me").json()
+    assert (body["name"], body["handle"], body["email"]) == (
+        "Alice Kim",
+        "alice_k",
+        "alice@example.com",
+    )
+
+
+def test_update_me_changes_only_sent_fields(client):
+    _sign_in(ALICE, email="alice@example.com", name="Alice")
+    body = client.patch("/api/me", json={"name": "Renamed"}).json()
+    assert (body["name"], body["handle"]) == ("Renamed", "alice")
+    body = client.patch("/api/me", json={"handle": "renamed"}).json()
+    assert (body["name"], body["handle"]) == ("Renamed", "renamed")
+
+
+def test_update_me_rejects_a_taken_handle(client):
+    _sign_in(BOB, email="bob@example.com")
+    client.get("/api/me")
+    _sign_in(ALICE, email="alice@example.com")
+    assert client.patch("/api/me", json={"handle": "BOB"}).status_code == 409
+    assert client.get("/api/me").json()["handle"] == "alice"
+
+
+def test_update_me_accepts_the_current_handle(client):
+    # Re-sending my own handle is not a conflict with myself.
+    _sign_in(ALICE, email="alice@example.com")
+    res = client.patch("/api/me", json={"name": "Alice", "handle": "alice"})
+    assert res.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"name": "   "},
+        {"name": "a" * 51},
+        {"handle": "ab"},
+        {"handle": "a" * 31},
+        {"handle": "al ice"},
+        {"handle": "@alice"},
+        {"handle": "앨리스"},
+    ],
+)
+def test_update_me_rejects_invalid_fields(client, fields):
+    _sign_in(ALICE, email="alice@example.com", name="Alice")
+    assert client.patch("/api/me", json=fields).status_code == 422
+    body = client.get("/api/me").json()
+    assert (body["name"], body["handle"]) == ("Alice", "alice")
