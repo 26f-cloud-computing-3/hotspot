@@ -125,7 +125,6 @@ export function UserProfilePage() {
         <span className="user-identity">
           <strong>{profile.name}</strong>
           <small>@{profile.handle}</small>
-          {profile.is_me && me?.email && <small>{me.email}</small>}
         </span>
         {profile.is_me ? (
           <Link className="button button-secondary" to="/collections">

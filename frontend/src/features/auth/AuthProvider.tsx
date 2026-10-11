@@ -14,7 +14,6 @@ import { supabase } from "../../lib/supabase";
 /** The signed-in user's own row, as `GET /api/me` returns it. */
 export interface Me {
   id: string;
-  email: string | null;
   name: string;
   handle: string;
   avatar_url: string | null;
