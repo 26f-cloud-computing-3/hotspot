@@ -1,7 +1,11 @@
-import { apiDelete, apiGet, apiPut } from "../../lib/api";
+import { apiDelete, apiGet, apiPatch, apiPut } from "../../lib/api";
+import type { Me } from "../auth/AuthProvider";
 import type { Collection } from "../collections/api";
 
 export const USER_QUERY_MAX_LENGTH = 50;
+export const USER_NAME_MAX_LENGTH = 50;
+export const HANDLE_MIN_LENGTH = 3;
+export const HANDLE_MAX_LENGTH = 30;
 
 export interface FollowUser {
   id: string;
@@ -45,4 +49,12 @@ export function follow(userId: string): Promise<void> {
 
 export function unfollow(userId: string): Promise<void> {
   return apiDelete<void>(`/api/follows/${userId}`);
+}
+
+/** Changes my name and/or handle; fields left out stay as they are. Rejects with 409 when the handle is taken. */
+export function updateMe(fields: {
+  name?: string;
+  handle?: string;
+}): Promise<Me> {
+  return apiPatch<Me>("/api/me", fields);
 }

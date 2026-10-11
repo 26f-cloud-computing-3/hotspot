@@ -64,3 +64,17 @@
 .profile-header a.button {
   @apply no-underline;
 }
+.profile-actions {
+  @apply flex shrink-0 gap-[var(--space-sm)];
+}
+@media (max-width: 767px) {
+  .profile-header {
+    @apply flex-wrap;
+  }
+  .profile-actions {
+    @apply w-full;
+  }
+  .profile-actions .button {
+    @apply flex-1;
+  }
+}
