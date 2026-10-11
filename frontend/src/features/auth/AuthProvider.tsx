@@ -11,9 +11,20 @@ import {
 import { apiGet } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 
+/** The signed-in user's own row, as `GET /api/me` returns it. */
+export interface Me {
+  id: string;
+  email: string | null;
+  name: string;
+  handle: string;
+  avatar_url: string | null;
+}
+
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
+  /** Null until it has loaded, and while signed out. */
+  me: Me | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -24,6 +35,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     // Fires INITIAL_SESSION once the stored session (or an OAuth code in the
@@ -40,13 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The backend creates the user's profile row on their first authenticated
     // request; ask for it right after sign-in so the row exists before it is needed.
     // Kept out of the onAuthStateChange callback, where calling supabase would deadlock.
-    if (userId) apiGet("/api/me").catch(() => {});
+    setMe(null);
+    if (!userId) return;
+    let cancelled = false;
+    apiGet<Me>("/api/me")
+      .then((loaded) => {
+        if (!cancelled) setMe(loaded);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       user: session?.user ?? null,
+      me,
       loading,
       signInWithGoogle: async () => {
         const { error } = await supabase.auth.signInWithOAuth({
@@ -60,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       },
     }),
-    [session, loading],
+    [session, me, loading],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

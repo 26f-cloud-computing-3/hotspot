@@ -13,6 +13,8 @@ export function AppShell({
   children,
   page,
   onNavigate,
+  me,
+  onOpenProfile,
   signingOut,
   onSignOut,
 }: AppShellProps) {
@@ -54,6 +56,10 @@ export function AppShell({
     onNavigate(next);
     drawer.current?.close();
   }
+  function openProfile() {
+    onOpenProfile();
+    drawer.current?.close();
+  }
   function signOut() {
     drawer.current?.close();
     onSignOut();
@@ -61,6 +67,8 @@ export function AppShell({
   const navigationProps = {
     page,
     onNavigate: navigate,
+    me,
+    onOpenProfile: openProfile,
     signingOut,
     onSignOut: signOut,
   };

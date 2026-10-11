@@ -35,7 +35,7 @@ export function useActivePage(page: Page | null) {
 }
 
 export function HomePage() {
-  const { signOut } = useAuth();
+  const { signOut, me } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [notice, setNotice] = useState("");
   const navigateTo = useNavigate();
@@ -50,8 +50,10 @@ export function HomePage() {
       : (PAGE_BY_SEGMENT[segment] ?? segment);
   const activePage =
     NAVIGATION_ITEMS.find((item) => item.id === pageId) ?? NAVIGATION_ITEMS[0];
-  const page = activePage.id;
-  const title = activePage.label;
+  // My own profile is opened from the sidebar footer, not from the followers tab.
+  const onMyProfile = me !== null && pathname === `/users/${me.id}`;
+  const page = onMyProfile ? "me" : activePage.id;
+  const title = onMyProfile ? "내 프로필" : activePage.label;
 
   function navigate(next: Page) {
     navigateTo(`/${next}`);
@@ -72,19 +74,26 @@ export function HomePage() {
     <AppShell
       page={page}
       onNavigate={navigate}
+      me={me}
+      onOpenProfile={() => {
+        if (me) navigateTo(`/users/${me.id}`);
+        setNotice("");
+      }}
       signingOut={signingOut}
       onSignOut={handleSignOut}
     >
       <div className="page-heading">
         <h1>{title}</h1>
         <p>
-          {page === "places"
-            ? "나만의 핫스팟을 찾아보세요."
-            : page === "collections"
-              ? "좋아하는 장소를 테마별로 모아 보세요."
-              : page === "followers"
-                ? "친구를 찾아 팔로우해 보세요."
-                : "좋아하는 장소로 이어지는 공간"}
+          {page === "me"
+            ? "다른 사람에게 보이는 내 모습이에요."
+            : page === "places"
+              ? "나만의 핫스팟을 찾아보세요."
+              : page === "collections"
+                ? "좋아하는 장소를 테마별로 모아 보세요."
+                : page === "followers"
+                  ? "친구를 찾아 팔로우해 보세요."
+                  : "좋아하는 장소로 이어지는 공간"}
         </p>
       </div>
       {notice && (

@@ -7,3 +7,5 @@ export const NAVIGATION_ITEMS = [
   { id: "followers", label: "팔로워", icon: "people" },
 ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 export type Page = (typeof NAVIGATION_ITEMS)[number]["id"];
+/** "me" is the signed-in user's own profile, reached from the sidebar footer. */
+export type ActivePage = Page | "me";
