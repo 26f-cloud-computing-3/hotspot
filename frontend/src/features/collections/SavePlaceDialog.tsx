@@ -1,9 +1,12 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "../../components/Icon";
+import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import type { Place } from "../map/types";
 import {
   addPlaceToCollection,
   type Collection,
+  invalidateCollections,
   listMyCollectionsForPlace,
   removePlaceFromCollection,
 } from "./api";
@@ -20,9 +23,13 @@ interface SavePlaceDialogProps {
 export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const newDialog = useRef<HTMLDialogElement>(null);
-  const [collections, setCollections] = useState<Collection[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const queryClient = useQueryClient();
+  const collectionsKey = queryKeys.collections.mineForPlace(place);
+  const collectionsQuery = useQuery({
+    queryKey: collectionsKey,
+    queryFn: () => listMyCollectionsForPlace(place),
+  });
+  const collections = collectionsQuery.data;
   const [pendingIds, setPendingIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const titleId = useId();
@@ -31,30 +38,15 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
     dialogRef.current?.showModal();
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
-  useEffect(() => {
-    let cancelled = false;
-    setFailed(false);
-    listMyCollectionsForPlace(place)
-      .then((items) => {
-        if (!cancelled) setCollections(items);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [place, attempt]);
-
   async function setSaved(collection: Collection, saved: boolean) {
     setPendingIds((ids) => [...ids, collection.id]);
     setError("");
     try {
       if (saved) await addPlaceToCollection(collection.id, place);
       else await removePlaceFromCollection(collection.id, place);
-      setCollections((items) =>
-        (items ?? []).map((item) =>
+      // Ticks the box right away; the other screens catch up in the background.
+      queryClient.setQueryData<Collection[]>(collectionsKey, (items) =>
+        items?.map((item) =>
           item.id === collection.id
             ? {
                 ...item,
@@ -64,6 +56,7 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
             : item,
         ),
       );
+      void invalidateCollections(queryClient);
     } catch {
       setError(
         saved
@@ -76,20 +69,20 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
   }
 
   let content = null;
-  if (failed) {
+  if (loadFailed(collectionsQuery)) {
     content = (
       <div className="save-place-status" role="alert">
         <p>컬렉션을 불러오지 못했습니다.</p>
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => setAttempt((value) => value + 1)}
+          onClick={() => retryLoad(collectionsQuery)}
         >
           다시 시도
         </button>
       </div>
     );
-  } else if (collections === null) {
+  } else if (collections === undefined) {
     content = (
       <p className="save-place-status" role="status">
         불러오는 중…
@@ -156,7 +149,7 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
             <button
               type="button"
               className="button button-secondary"
-              disabled={collections === null}
+              disabled={collections === undefined}
               onClick={() => newDialog.current?.showModal()}
             >
               <Icon name="plus" />새 컬렉션
@@ -174,14 +167,8 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
       {/* A sibling, not a child, so its Escape and backdrop clicks don't also close this dialog. */}
       <CollectionDialog
         dialogRef={newDialog}
-        onSaved={(created) => {
-          setCollections((items) => [
-            { ...created, contains_place: false },
-            ...(items ?? []),
-          ]);
-          // A collection made from here is meant for this place, so save it right away.
-          void setSaved(created, true);
-        }}
+        // A collection made from here is meant for this place, so save it right away.
+        onSaved={(created) => void setSaved(created, true)}
       />
     </>
   );

@@ -1,4 +1,7 @@
+import type { QueryClient } from "@tanstack/react-query";
+
 import { apiDelete, apiGet, apiPatch, apiPost } from "../../lib/api";
+import { queryKeys } from "../../lib/query";
 import type { Place } from "../map/types";
 
 export const COLLECTION_NAME_MAX_LENGTH = 50;
@@ -86,4 +89,17 @@ export function removePlaceFromCollection(
   return apiDelete<void>(
     `/api/collections/${collectionId}/places/${encodeURIComponent(place.provider)}/${encodeURIComponent(place.id)}`,
   );
+}
+
+/**
+ * Marks every cached collection out of date after one of mine changed, and resolves
+ * once the lists on screen are fresh. A profile shows its user's collections too.
+ */
+export async function invalidateCollections(
+  queryClient: QueryClient,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.collections.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+  ]);
 }

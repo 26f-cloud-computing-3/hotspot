@@ -1,33 +1,21 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Icon } from "../../components/Icon";
+import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { type Collection, listMyCollections } from "./api";
 import { CollectionDialog } from "./CollectionDialog";
 import "./CollectionsPage.css";
 
 export function CollectionsPage() {
-  const [collections, setCollections] = useState<Collection[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const collectionsQuery = useQuery({
+    queryKey: queryKeys.collections.mine,
+    queryFn: listMyCollections,
+  });
+  const collections = collectionsQuery.data;
   const [editing, setEditing] = useState<Collection | null>(null);
   const newDialog = useRef<HTMLDialogElement>(null);
   const editDialog = useRef<HTMLDialogElement>(null);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
-  useEffect(() => {
-    let cancelled = false;
-    setFailed(false);
-    listMyCollections()
-      .then((items) => {
-        if (!cancelled) setCollections(items);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
 
   useEffect(() => {
     if (editing) editDialog.current?.showModal();
@@ -44,20 +32,20 @@ export function CollectionsPage() {
   );
 
   let content = null;
-  if (failed) {
+  if (loadFailed(collectionsQuery)) {
     content = (
       <section className="empty-panel" role="alert">
         <p>컬렉션을 불러오지 못했습니다.</p>
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => setAttempt((value) => value + 1)}
+          onClick={() => retryLoad(collectionsQuery)}
         >
           다시 시도
         </button>
       </section>
     );
-  } else if (collections === null) {
+  } else if (collections === undefined) {
     content = (
       <p className="collections-status" role="status">
         불러오는 중…
@@ -111,29 +99,12 @@ export function CollectionsPage() {
   return (
     <>
       {content}
-      <CollectionDialog
-        dialogRef={newDialog}
-        onSaved={(created) =>
-          setCollections((items) => [created, ...(items ?? [])])
-        }
-      />
+      <CollectionDialog dialogRef={newDialog} />
       {editing && (
         <CollectionDialog
           key={editing.id}
           dialogRef={editDialog}
           collection={editing}
-          onSaved={(updated) =>
-            setCollections((items) =>
-              (items ?? []).map((item) =>
-                item.id === updated.id ? updated : item,
-              ),
-            )
-          }
-          onDeleted={(id) =>
-            setCollections((items) =>
-              (items ?? []).filter((item) => item.id !== id),
-            )
-          }
           onClose={() => setEditing(null)}
         />
       )}

@@ -1,9 +1,13 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type RefObject, type SubmitEvent, useId, useState } from "react";
+import { queryKeys } from "../../lib/query";
 import {
   COLLECTION_NAME_MAX_LENGTH,
   type Collection,
+  type CollectionFields,
   createCollection,
   deleteCollection,
+  invalidateCollections,
   updateCollection,
 } from "./api";
 
@@ -26,11 +30,10 @@ const LABELS = {
 
 interface CollectionDialogProps {
   dialogRef: RefObject<HTMLDialogElement | null>;
-  /** The collection to edit; omit it to create a new one. */
+  /** The collection to edit, which can also be deleted; omit it to create a new one. */
   collection?: Collection;
-  onSaved: (collection: Collection) => void;
-  /** Shown only when editing; called with the id once the collection is deleted. */
-  onDeleted?: (id: string) => void;
+  /** Called once the lists on screen include the saved collection. */
+  onSaved?: (collection: Collection) => void;
   onClose?: () => void;
 }
 
@@ -38,19 +41,34 @@ export function CollectionDialog({
   dialogRef,
   collection,
   onSaved,
-  onDeleted,
   onClose,
 }: CollectionDialogProps) {
   const initialName = collection?.name ?? "";
   const initialIsPublic = collection?.is_public ?? false;
   const [name, setName] = useState(initialName);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const titleId = useId();
 
   const editing = collection !== undefined;
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: (fields: CollectionFields) =>
+      editing
+        ? updateCollection(collection.id, fields)
+        : createCollection(fields),
+    onSuccess: () => invalidateCollections(queryClient),
+  });
+  const remove = useMutation({
+    mutationFn: deleteCollection,
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: queryKeys.collections.detail(id) });
+      queryClient.removeQueries({ queryKey: queryKeys.collections.places(id) });
+      return invalidateCollections(queryClient);
+    },
+  });
+  const saving = save.isPending || remove.isPending;
   const labels = editing ? LABELS.edit : LABELS.create;
   const unchanged = name.trim() === initialName && isPublic === initialIsPublic;
 
@@ -62,34 +80,26 @@ export function CollectionDialog({
   }
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
     setError("");
-    const fields = { name: name.trim(), is_public: isPublic };
     try {
-      onSaved(
-        await (editing
-          ? updateCollection(collection.id, fields)
-          : createCollection(fields)),
-      );
+      const saved = await save.mutateAsync({
+        name: name.trim(),
+        is_public: isPublic,
+      });
+      onSaved?.(saved);
       dialogRef.current?.close();
     } catch {
       setError(labels.error);
-    } finally {
-      setSaving(false);
     }
   }
   async function handleDelete() {
     if (!collection) return;
-    setSaving(true);
     setError("");
     try {
-      await deleteCollection(collection.id);
-      onDeleted?.(collection.id);
+      await remove.mutateAsync(collection.id);
       dialogRef.current?.close();
     } catch {
       setError("컬렉션을 삭제하지 못했습니다. 다시 시도해 주세요.");
-    } finally {
-      setSaving(false);
     }
   }
   const errorMessage = error && (
@@ -170,7 +180,7 @@ export function CollectionDialog({
           </label>
           {errorMessage}
           <div className="form-actions">
-            {editing && onDeleted && (
+            {editing && (
               <button
                 type="button"
                 className="button button-danger-text"
