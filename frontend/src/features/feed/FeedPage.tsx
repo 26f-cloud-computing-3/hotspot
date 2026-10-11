@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { Icon } from "../../components/Icon";
+import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { UserAvatar } from "../follows/UserAvatar";
 import { type FeedItem, getFeed } from "./api";
 import { relativeTime } from "./relativeTime";
@@ -38,67 +39,35 @@ function describe(item: FeedItem): { action: string; subject: string } {
 }
 
 export function FeedPage() {
-  const [items, setItems] = useState<FeedItem[] | null>(null);
-  const [continuation, setContinuation] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [moreFailed, setMoreFailed] = useState(false);
+  const feedQuery = useInfiniteQuery({
+    queryKey: queryKeys.feed,
+    queryFn: ({ pageParam }) => getFeed(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.continuation ?? undefined,
+  });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
-  useEffect(() => {
-    let cancelled = false;
-    setFailed(false);
-    getFeed()
-      .then((page) => {
-        if (cancelled) return;
-        setItems(page.items);
-        setContinuation(page.continuation);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
-
-  async function loadMore() {
-    if (!continuation) return;
-    setLoadingMore(true);
-    setMoreFailed(false);
-    try {
-      const page = await getFeed(continuation);
-      setItems((current) => [...(current ?? []), ...page.items]);
-      setContinuation(page.continuation);
-    } catch {
-      setMoreFailed(true);
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
-  if (failed) {
+  if (loadFailed(feedQuery)) {
     return (
       <section className="empty-panel" role="alert">
         <p>피드를 불러오지 못했습니다.</p>
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => setAttempt((value) => value + 1)}
+          onClick={() => retryLoad(feedQuery)}
         >
           다시 시도
         </button>
       </section>
     );
   }
-  if (items === null) {
+  if (feedQuery.data === undefined) {
     return (
       <p className="feed-status" role="status">
         불러오는 중…
       </p>
     );
   }
+  const items = feedQuery.data.pages.flatMap((page) => page.items);
   if (items.length === 0) {
     return (
       <section className="empty-panel">
@@ -135,9 +104,9 @@ export function FeedPage() {
           );
         })}
       </ul>
-      {continuation && (
+      {feedQuery.hasNextPage && (
         <div className="feed-more">
-          {moreFailed && (
+          {feedQuery.isFetchNextPageError && (
             <p className="feed-status feed-error" role="alert">
               더 불러오지 못했습니다. 다시 시도해 주세요.
             </p>
@@ -145,10 +114,10 @@ export function FeedPage() {
           <button
             type="button"
             className="button button-secondary"
-            disabled={loadingMore}
-            onClick={loadMore}
+            disabled={feedQuery.isFetchingNextPage}
+            onClick={() => feedQuery.fetchNextPage()}
           >
-            {loadingMore ? "불러오는 중…" : "더 보기"}
+            {feedQuery.isFetchingNextPage ? "불러오는 중…" : "더 보기"}
           </button>
         </div>
       )}
