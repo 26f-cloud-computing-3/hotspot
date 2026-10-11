@@ -22,6 +22,7 @@ interface MapViewContainerProps {
   onMapClick?: (point: LatLng, radius: number) => void;
   fitPlaces?: boolean;
   onPlaceSave?: (place: Place) => void;
+  startAtCurrentLocation?: boolean;
 }
 
 export function MapView({
@@ -34,6 +35,7 @@ export function MapView({
   onMapClick,
   fitPlaces,
   onPlaceSave,
+  startAtCurrentLocation,
 }: MapViewContainerProps) {
   const [config, setConfig] = useState<MapConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export function MapView({
       onMapClick={onMapClick}
       fitPlaces={fitPlaces}
       onPlaceSave={onPlaceSave}
+      startAtCurrentLocation={startAtCurrentLocation}
     />
   );
 }

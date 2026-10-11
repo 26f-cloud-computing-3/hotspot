@@ -20,6 +20,7 @@ import {
 } from "./searchHistoryApi";
 import type { LatLng, Place, PlaceSearchResult } from "./types";
 
+// Shown until the user's position is known, and kept when it cannot be had.
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
 // Bounds on how far around a tapped point to look, whatever the zoom level.
 const MIN_NEARBY_RADIUS = 20;
@@ -250,6 +251,7 @@ export function PlaceSearch() {
           onMapClick={findNearby}
           fitPlaces={source?.kind !== "nearby"}
           onPlaceSave={setSavingPlace}
+          startAtCurrentLocation
         />
       </section>
 
