@@ -3,12 +3,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import ColumnElement, Select, exists, select, true
+from sqlalchemy import ColumnElement, Select, exists, func, select, true
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.collections import CollectionOut, list_public_collections
 from app.core.db import get_db
 from app.core.users import get_registered_user
+from app.models.collection import Collection
 from app.models.follow import Follow
 from app.models.user import User
 
@@ -24,6 +26,12 @@ class UserOut(BaseModel):
     avatar_url: str | None
     # Whether the signed-in user follows this user.
     is_following: bool
+
+
+class UserProfileOut(UserOut):
+    # Whether this is the signed-in user's own profile.
+    is_me: bool
+    public_collection_count: int
 
 
 def _followed_by(user: User) -> ColumnElement[bool]:
@@ -67,6 +75,43 @@ def search_users(
         .order_by(User.handle)
         .limit(SEARCH_LIMIT),
     )
+
+
+@router.get("/users/{user_id}")
+def get_user(
+    user_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> UserProfileOut:
+    """A user's profile as any signed-in user may see it; private collections are not counted."""
+    target = _get_user(db, user_id)
+    return UserProfileOut(
+        id=target.id,
+        name=target.name,
+        handle=target.handle,
+        avatar_url=target.avatar_url,
+        is_following=db.get(Follow, (user.id, target.id)) is not None,
+        is_me=target.id == user.id,
+        public_collection_count=db.scalar(
+            select(func.count())
+            .select_from(Collection)
+            .where(Collection.owner_id == target.id, Collection.is_public)
+        ),
+    )
+
+
+@router.get("/users/{user_id}/collections")
+def list_user_collections(
+    user_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> list[CollectionOut]:
+    """A user's public collections, newest first.
+
+    Following is not required, and asking for your own lists only the public ones too:
+    it is the view everyone else gets.
+    """
+    return list_public_collections(db, _get_user(db, user_id), user)
 
 
 @router.get("/follows/following")
@@ -142,3 +187,10 @@ def unfollow(
         db.delete(row)
         db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _get_user(db: Session, user_id: uuid.UUID) -> User:
+    target = db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    return target
