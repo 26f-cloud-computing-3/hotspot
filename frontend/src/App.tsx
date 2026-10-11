@@ -6,6 +6,7 @@ import { RequireAuth } from "./features/auth/RequireAuth";
 import { CollectionDetailPage } from "./features/collections/CollectionDetailPage";
 import { CollectionsPage } from "./features/collections/CollectionsPage";
 import { FollowersPage } from "./features/follows/FollowersPage";
+import { UserProfilePage } from "./features/follows/UserProfilePage";
 import { PlaceSearch } from "./features/map/PlaceSearch";
 import { ComingSoon } from "./pages/ComingSoon";
 import { HomePage } from "./pages/HomePage";
@@ -27,6 +28,7 @@ function App() {
               />
               <Route path="/feed" element={<ComingSoon page="feed" />} />
               <Route path="/followers" element={<FollowersPage />} />
+              <Route path="/users/:userId" element={<UserProfilePage />} />
               <Route path="*" element={<Navigate to="/places" replace />} />
             </Route>
           </Route>

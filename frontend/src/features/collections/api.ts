@@ -3,11 +3,21 @@ import type { Place } from "../map/types";
 
 export const COLLECTION_NAME_MAX_LENGTH = 50;
 
+export interface CollectionOwner {
+  id: string;
+  name: string;
+  handle: string;
+  avatar_url: string | null;
+}
+
 export interface Collection {
   id: string;
   name: string;
   is_public: boolean;
   place_count: number;
+  owner: CollectionOwner;
+  /** Whether the signed-in user owns this collection; only the owner may change it. */
+  is_owner: boolean;
   /** Whether the place asked about is in this collection; null when none was asked about. */
   contains_place: boolean | null;
   created_at: string;
@@ -31,6 +41,7 @@ export function listMyCollectionsForPlace(place: Place): Promise<Collection[]> {
   return apiGet<Collection[]>(`/api/collections?${params}`);
 }
 
+/** One of my collections, or anyone's public one. */
 export function getCollection(id: string): Promise<Collection> {
   return apiGet<Collection>(`/api/collections/${id}`);
 }
