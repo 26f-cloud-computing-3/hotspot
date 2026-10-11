@@ -127,6 +127,9 @@ export function PlaceSearch() {
   }
 
   function searchAgain(history: SearchHistory) {
+    // The list is done with; let go of the input so a touch keyboard gets out of
+    // the way of the results.
+    inputRef.current?.blur();
     setQuery(history.query);
     search(history.query);
   }
@@ -192,7 +195,13 @@ export function PlaceSearch() {
         </form>
 
         {showsHistory && (
-          <section className="search-history" aria-label="최근 검색어">
+          <section
+            className="search-history"
+            aria-label="최근 검색어"
+            // Safari does not focus a pressed button, so the input would blur to
+            // nothing and the list would close before the click lands.
+            onMouseDown={(event) => event.preventDefault()}
+          >
             <header>
               <h2>최근 검색어</h2>
               <button
