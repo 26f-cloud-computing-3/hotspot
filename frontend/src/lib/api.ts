@@ -13,6 +13,13 @@ export class ApiError extends Error {
   }
 }
 
+/** Whether a load failed because there is nothing to load: 422 is an id that is not a UUID. */
+export function isNotFound(error: unknown): boolean {
+  return (
+    error instanceof ApiError && (error.status === 404 || error.status === 422)
+  );
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
