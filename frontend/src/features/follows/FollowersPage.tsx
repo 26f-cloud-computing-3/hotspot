@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { Icon } from "../../components/Icon";
 import {
   type FollowUser,
@@ -9,6 +10,7 @@ import {
   USER_QUERY_MAX_LENGTH,
   unfollow,
 } from "./api";
+import { UserAvatar } from "./UserAvatar";
 import "./FollowersPage.css";
 
 const SEARCH_DELAY_MS = 300;
@@ -117,22 +119,13 @@ export function FollowersPage() {
       <ul className="user-list">
         {users.map((user) => (
           <li key={user.id} className="user-row">
-            {user.avatar_url ? (
-              <img
-                className="user-avatar"
-                src={user.avatar_url}
-                alt=""
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="user-avatar" aria-hidden="true">
-                {user.name.slice(0, 1)}
+            <Link className="user-link" to={`/users/${user.id}`}>
+              <UserAvatar user={user} />
+              <span className="user-identity">
+                <strong>{user.name}</strong>
+                <small>@{user.handle}</small>
               </span>
-            )}
-            <span className="user-identity">
-              <strong>{user.name}</strong>
-              <small>@{user.handle}</small>
-            </span>
+            </Link>
             <button
               type="button"
               className={`button ${user.is_following ? "button-secondary" : "button-primary"}`}

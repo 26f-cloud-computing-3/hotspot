@@ -3,6 +3,16 @@ import { supabase } from "./supabase";
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+/** A response outside the 2xx range; `status` lets callers tell "not found" from a failure. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -23,7 +33,7 @@ async function request<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`${method} ${path} failed: ${res.status}`);
+    throw new ApiError(`${method} ${path} failed: ${res.status}`, res.status);
   }
   // 204 No Content has no body to parse.
   if (res.status === 204) return undefined as T;

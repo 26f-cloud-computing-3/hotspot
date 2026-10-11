@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router";
 import { AppShell } from "../components/layout/AppShell";
 import {
   NAVIGATION_ITEMS,
@@ -8,15 +13,43 @@ import {
 import { useAuth } from "../features/auth/AuthProvider";
 import "./HomePage.css";
 
+// Screens reached from a tab without living under its path.
+const PAGE_BY_SEGMENT: Record<string, Page> = { users: "followers" };
+
+interface PageOverride {
+  pathname: string;
+  page: Page;
+}
+
+/**
+ * Lets a routed screen say which tab it belongs to when its path alone can't tell
+ * (someone else's collection is opened from the followers tab). Pass null to keep
+ * the tab the path implies.
+ */
+export function useActivePage(page: Page | null) {
+  const setOverride = useOutletContext<(override: PageOverride) => void>();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (page) setOverride({ pathname, page });
+  }, [page, pathname, setOverride]);
+}
+
 export function HomePage() {
   const { signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [notice, setNotice] = useState("");
   const navigateTo = useNavigate();
+  const { pathname } = useLocation();
+  // Tied to the path it was set for, so it lapses on its own when the screen changes.
+  const [override, setOverride] = useState<PageOverride | null>(null);
   // The first path segment is the active tab, so a reload keeps it.
-  const segment = useLocation().pathname.split("/")[1];
+  const segment = pathname.split("/")[1];
+  const pageId =
+    override?.pathname === pathname
+      ? override.page
+      : (PAGE_BY_SEGMENT[segment] ?? segment);
   const activePage =
-    NAVIGATION_ITEMS.find((item) => item.id === segment) ?? NAVIGATION_ITEMS[0];
+    NAVIGATION_ITEMS.find((item) => item.id === pageId) ?? NAVIGATION_ITEMS[0];
   const page = activePage.id;
   const title = activePage.label;
 
@@ -59,7 +92,7 @@ export function HomePage() {
           {notice}
         </p>
       )}
-      <Outlet />
+      <Outlet context={setOverride} />
     </AppShell>
   );
 }

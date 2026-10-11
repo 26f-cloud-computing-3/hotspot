@@ -36,6 +36,9 @@
 .user-avatar {
   @apply flex items-center justify-center size-[var(--control-size)] shrink-0 rounded-[var(--radius-full)] object-cover bg-[var(--color-secondary)] text-[color:var(--color-muted)] font-bold;
 }
+.user-link {
+  @apply flex items-center gap-[var(--space-md)] min-w-0 flex-1 rounded-[var(--radius-md)] text-inherit no-underline;
+}
 .user-identity {
   @apply min-w-0 flex-1;
 }
@@ -49,6 +52,15 @@
 .user-identity small {
   @apply text-[length:var(--font-small)] text-[color:var(--color-muted)];
 }
+.user-link:hover strong {
+  @apply underline;
+}
 .user-row .button {
   @apply shrink-0;
+}
+.profile-header {
+  @apply mb-[var(--space-xl)] p-[var(--space-lg)];
+}
+.profile-header a.button {
+  @apply no-underline;
 }
