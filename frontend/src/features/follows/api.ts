@@ -22,39 +22,39 @@ export interface UserProfile extends FollowUser {
   public_collection_count: number;
 }
 
-export function getUserProfile(userId: string): Promise<UserProfile> {
+export const getUserProfile = (userId: string): Promise<UserProfile> => {
   return apiGet<UserProfile>(`/api/users/${userId}`);
-}
+};
 
 /** A user's public collections, newest first. */
-export function listUserCollections(userId: string): Promise<Collection[]> {
+export const listUserCollections = (userId: string): Promise<Collection[]> => {
   return apiGet<Collection[]>(`/api/users/${userId}/collections`);
-}
+};
 
-export function searchUsers(query: string): Promise<FollowUser[]> {
+export const searchUsers = (query: string): Promise<FollowUser[]> => {
   return apiGet<FollowUser[]>(`/api/users?q=${encodeURIComponent(query)}`);
-}
+};
 
-export function listFollowing(): Promise<FollowUser[]> {
+export const listFollowing = (): Promise<FollowUser[]> => {
   return apiGet<FollowUser[]>("/api/follows/following");
-}
+};
 
-export function listFollowers(): Promise<FollowUser[]> {
+export const listFollowers = (): Promise<FollowUser[]> => {
   return apiGet<FollowUser[]>("/api/follows/followers");
-}
+};
 
-export function follow(userId: string): Promise<void> {
+export const follow = (userId: string): Promise<void> => {
   return apiPut<void>(`/api/follows/${userId}`);
-}
+};
 
-export function unfollow(userId: string): Promise<void> {
+export const unfollow = (userId: string): Promise<void> => {
   return apiDelete<void>(`/api/follows/${userId}`);
-}
+};
 
 /** Changes my name and/or handle; fields left out stay as they are. Rejects with 409 when the handle is taken. */
-export function updateMe(fields: {
+export const updateMe = (fields: {
   name?: string;
   handle?: string;
-}): Promise<Me> {
+}): Promise<Me> => {
   return apiPatch<Me>("/api/me", fields);
-}
+};

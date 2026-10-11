@@ -6,11 +6,11 @@ interface TopBarProps {
   onHome: () => void;
 }
 
-export function TopBar({
+export const TopBar = ({
   navigationExpanded,
   onToggleNavigation,
   onHome,
-}: TopBarProps) {
+}: TopBarProps) => {
   return (
     <header className="topbar">
       <button
@@ -30,4 +30,4 @@ export function TopBar({
       <span className="brand-caption">좋아하는 장소를 모으고, 나누세요.</span>
     </header>
   );
-}
+};

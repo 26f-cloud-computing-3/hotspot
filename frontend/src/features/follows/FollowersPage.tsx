@@ -19,16 +19,16 @@ const SEARCH_DELAY_MS = 300;
 type Tab = "followers" | "following";
 
 /** `value`, once it has stopped changing for `delayMs`. */
-function useDebounced<T>(value: T, delayMs: number): T {
+const useDebounced = <T,>(value: T, delayMs: number): T => {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delayMs);
     return () => clearTimeout(timer);
   }, [value, delayMs]);
   return debounced;
-}
+};
 
-export function FollowersPage() {
+export const FollowersPage = () => {
   const followersQuery = useQuery({
     queryKey: queryKeys.follows.followers,
     queryFn: listFollowers,
@@ -55,7 +55,7 @@ export function FollowersPage() {
   const results = searched ? searchQuery.data : undefined;
   const searchFailed = searched && loadFailed(searchQuery);
 
-  function userList(users: FollowUser[]) {
+  const userList = (users: FollowUser[]) => {
     return (
       <ul className="user-list">
         {users.map((user) => (
@@ -81,7 +81,7 @@ export function FollowersPage() {
         ))}
       </ul>
     );
-  }
+  };
 
   let content = null;
   if (term) {
@@ -195,4 +195,4 @@ export function FollowersPage() {
       {content}
     </section>
   );
-}
+};

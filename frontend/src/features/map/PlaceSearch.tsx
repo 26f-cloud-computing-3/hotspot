@@ -29,7 +29,7 @@ const MAX_NEARBY_RADIUS = 1000;
 /** Where the listed places came from: a text search, or a tap on the map. */
 type ResultSource = { kind: "search"; query: string } | { kind: "nearby" };
 
-export function PlaceSearch() {
+export const PlaceSearch = () => {
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export function PlaceSearch() {
     }
   }, []);
 
-  async function search(text: string) {
+  const search = async (text: string) => {
     const trimmedQuery = text.trim();
     if (!trimmedQuery || isSearching) return;
 
@@ -119,22 +119,22 @@ export function PlaceSearch() {
     } finally {
       setIsSearching(false);
     }
-  }
+  };
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     search(query);
-  }
+  };
 
-  function searchAgain(history: SearchHistory) {
+  const searchAgain = (history: SearchHistory) => {
     // The list is done with; let go of the input so a touch keyboard gets out of
     // the way of the results.
     inputRef.current?.blur();
     setQuery(history.query);
     search(history.query);
-  }
+  };
 
-  function removeHistory(history: SearchHistory) {
+  const removeHistory = (history: SearchHistory) => {
     // The pressed button is about to disappear; keep focus inside the search box.
     inputRef.current?.focus();
     deleteSearchHistory(history.id)
@@ -144,20 +144,20 @@ export function PlaceSearch() {
         ),
       )
       .catch(() => {});
-  }
+  };
 
-  function clearHistories() {
+  const clearHistories = () => {
     inputRef.current?.focus();
     clearSearchHistories()
       .then(() => setHistories([]))
       .catch(() => {});
-  }
+  };
 
-  function closeHistoryOnLeave(event: FocusEvent<HTMLDivElement>) {
+  const closeHistoryOnLeave = (event: FocusEvent<HTMLDivElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) {
       setIsHistoryOpen(false);
     }
-  }
+  };
 
   const showsHistory = isHistoryOpen && !query.trim() && histories.length > 0;
 
@@ -315,4 +315,4 @@ export function PlaceSearch() {
       )}
     </section>
   );
-}
+};

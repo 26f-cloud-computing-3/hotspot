@@ -31,75 +31,79 @@ export interface CollectionFields {
   is_public: boolean;
 }
 
-export function listMyCollections(): Promise<Collection[]> {
+export const listMyCollections = (): Promise<Collection[]> => {
   return apiGet<Collection[]>("/api/collections");
-}
+};
 
 /** My collections, each with `contains_place` telling whether it holds `place`. */
-export function listMyCollectionsForPlace(place: Place): Promise<Collection[]> {
+export const listMyCollectionsForPlace = (
+  place: Place,
+): Promise<Collection[]> => {
   const params = new URLSearchParams({
     provider: place.provider,
     place_id: place.id,
   });
   return apiGet<Collection[]>(`/api/collections?${params}`);
-}
+};
 
 /** One of my collections, or anyone's public one. */
-export function getCollection(id: string): Promise<Collection> {
+export const getCollection = (id: string): Promise<Collection> => {
   return apiGet<Collection>(`/api/collections/${id}`);
-}
+};
 
 /** The places saved in a collection, most recently added first. */
-export async function listCollectionPlaces(
+export const listCollectionPlaces = async (
   collectionId: string,
-): Promise<Place[]> {
+): Promise<Place[]> => {
   const places = await apiGet<Omit<Place, "distance">[]>(
     `/api/collections/${collectionId}/places`,
   );
   // Saved places have no search center to be measured from.
   return places.map((place) => ({ ...place, distance: null }));
-}
+};
 
-export function createCollection(body: CollectionFields): Promise<Collection> {
+export const createCollection = (
+  body: CollectionFields,
+): Promise<Collection> => {
   return apiPost<Collection>("/api/collections", body);
-}
+};
 
-export function updateCollection(
+export const updateCollection = (
   id: string,
   body: Partial<CollectionFields>,
-): Promise<Collection> {
+): Promise<Collection> => {
   return apiPatch<Collection>(`/api/collections/${id}`, body);
-}
+};
 
-export function deleteCollection(id: string): Promise<void> {
+export const deleteCollection = (id: string): Promise<void> => {
   return apiDelete<void>(`/api/collections/${id}`);
-}
+};
 
-export function addPlaceToCollection(
+export const addPlaceToCollection = (
   collectionId: string,
   place: Place,
-): Promise<unknown> {
+): Promise<unknown> => {
   return apiPost(`/api/collections/${collectionId}/places`, place);
-}
+};
 
-export function removePlaceFromCollection(
+export const removePlaceFromCollection = (
   collectionId: string,
   place: Place,
-): Promise<void> {
+): Promise<void> => {
   return apiDelete<void>(
     `/api/collections/${collectionId}/places/${encodeURIComponent(place.provider)}/${encodeURIComponent(place.id)}`,
   );
-}
+};
 
 /**
  * Marks every cached collection out of date after one of mine changed, and resolves
  * once the lists on screen are fresh. A profile shows its user's collections too.
  */
-export async function invalidateCollections(
+export const invalidateCollections = async (
   queryClient: QueryClient,
-): Promise<void> {
+): Promise<void> => {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.collections.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
   ]);
-}
+};

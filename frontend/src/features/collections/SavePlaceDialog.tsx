@@ -20,7 +20,7 @@ interface SavePlaceDialogProps {
 }
 
 /** Checklist of my collections; ticking one saves `place` into it, unticking removes it. */
-export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
+export const SavePlaceDialog = ({ place, onClose }: SavePlaceDialogProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const newDialog = useRef<HTMLDialogElement>(null);
   const queryClient = useQueryClient();
@@ -38,7 +38,7 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
     dialogRef.current?.showModal();
   }, []);
 
-  async function setSaved(collection: Collection, saved: boolean) {
+  const setSaved = async (collection: Collection, saved: boolean) => {
     setPendingIds((ids) => [...ids, collection.id]);
     setError("");
     try {
@@ -66,7 +66,7 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
     } finally {
       setPendingIds((ids) => ids.filter((id) => id !== collection.id));
     }
-  }
+  };
 
   let content = null;
   if (loadFailed(collectionsQuery)) {
@@ -172,4 +172,4 @@ export function SavePlaceDialog({ place, onClose }: SavePlaceDialogProps) {
       />
     </>
   );
-}
+};

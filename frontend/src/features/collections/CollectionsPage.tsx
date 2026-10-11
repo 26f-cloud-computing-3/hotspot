@@ -7,7 +7,7 @@ import { type Collection, listMyCollections } from "./api";
 import { CollectionDialog } from "./CollectionDialog";
 import "./CollectionsPage.css";
 
-export function CollectionsPage() {
+export const CollectionsPage = () => {
   const collectionsQuery = useQuery({
     queryKey: queryKeys.collections.mine,
     queryFn: listMyCollections,
@@ -110,4 +110,4 @@ export function CollectionsPage() {
       )}
     </>
   );
-}
+};

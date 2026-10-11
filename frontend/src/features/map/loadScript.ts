@@ -1,6 +1,6 @@
 const loadedScripts = new Map<string, Promise<void>>();
 
-export function loadScript(src: string): Promise<void> {
+export const loadScript = (src: string): Promise<void> => {
   const cached = loadedScripts.get(src);
   if (cached) return cached;
 
@@ -15,4 +15,4 @@ export function loadScript(src: string): Promise<void> {
 
   loadedScripts.set(src, promise);
   return promise;
-}
+};

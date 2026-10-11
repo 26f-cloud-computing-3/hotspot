@@ -32,9 +32,9 @@ export interface FeedPage {
 }
 
 /** Activity of the users I follow, newest first. Pass a page's `continuation` to get the next. */
-export function getFeed(continuation?: string): Promise<FeedPage> {
+export const getFeed = (continuation?: string): Promise<FeedPage> => {
   const params = continuation
     ? `?${new URLSearchParams({ continuation })}`
     : "";
   return apiGet<FeedPage>(`/api/feed${params}`);
-}
+};

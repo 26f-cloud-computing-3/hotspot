@@ -14,23 +14,23 @@ export class ApiError extends Error {
 }
 
 /** Whether a load failed because there is nothing to load: 422 is an id that is not a UUID. */
-export function isNotFound(error: unknown): boolean {
+export const isNotFound = (error: unknown): boolean => {
   return (
     error instanceof ApiError && (error.status === 404 || error.status === 422)
   );
-}
+};
 
-async function authHeaders(): Promise<Record<string, string>> {
+const authHeaders = async (): Promise<Record<string, string>> => {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   return token ? { Authorization: `Bearer ${token}` } : {};
-}
+};
 
-async function request<T>(
+const request = async <T>(
   method: string,
   path: string,
   body?: unknown,
-): Promise<T> {
+): Promise<T> => {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: {
@@ -45,24 +45,24 @@ async function request<T>(
   // 204 No Content has no body to parse.
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
-}
+};
 
-export function apiGet<T>(path: string): Promise<T> {
+export const apiGet = <T>(path: string): Promise<T> => {
   return request<T>("GET", path);
-}
+};
 
-export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+export const apiPost = <T>(path: string, body?: unknown): Promise<T> => {
   return request<T>("POST", path, body);
-}
+};
 
-export function apiPatch<T>(path: string, body: unknown): Promise<T> {
+export const apiPatch = <T>(path: string, body: unknown): Promise<T> => {
   return request<T>("PATCH", path, body);
-}
+};
 
-export function apiPut<T>(path: string, body?: unknown): Promise<T> {
+export const apiPut = <T>(path: string, body?: unknown): Promise<T> => {
   return request<T>("PUT", path, body);
-}
+};
 
-export function apiDelete<T>(path: string): Promise<T> {
+export const apiDelete = <T>(path: string): Promise<T> => {
   return request<T>("DELETE", path);
-}
+};

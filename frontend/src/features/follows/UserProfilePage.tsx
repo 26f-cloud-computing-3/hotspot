@@ -14,7 +14,7 @@ import "../collections/CollectionDetailPage.css";
 import "./FollowersPage.css";
 
 /** A user and the collections they have made public; the same view for every visitor. */
-export function UserProfilePage() {
+export const UserProfilePage = () => {
   const { userId = "" } = useParams();
   const { me, setMe } = useAuth();
   const queryClient = useQueryClient();
@@ -168,4 +168,4 @@ export function UserProfilePage() {
       )}
     </section>
   );
-}
+};
