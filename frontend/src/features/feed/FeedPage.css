@@ -18,6 +18,15 @@
 .feed-card-body strong {
   @apply text-[color:var(--color-ink)];
 }
+.feed-card-avatar {
+  @apply flex shrink-0 rounded-full;
+}
+.feed-card-link {
+  @apply text-inherit no-underline;
+}
+.feed-card-link:hover {
+  @apply underline;
+}
 .feed-card-subject {
   @apply text-[color:var(--color-ink)] font-bold;
 }

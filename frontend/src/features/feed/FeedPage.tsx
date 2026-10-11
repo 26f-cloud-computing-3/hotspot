@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Icon } from "../../components/Icon";
 import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
@@ -12,29 +13,55 @@ const fullDate = new Intl.DateTimeFormat("ko", {
   timeStyle: "short",
 });
 
+/** The collection's name, linking to its detail unless it has been deleted. */
+const CollectionName = ({
+  item: { collection_id, collection_name },
+  quoted = false,
+}: {
+  item: FeedItem;
+  quoted?: boolean;
+}) => {
+  const name = quoted ? `「${collection_name}」` : collection_name;
+  return collection_id === null ? (
+    name
+  ) : (
+    <Link className="feed-card-link" to={`/collections/${collection_id}`}>
+      {name}
+    </Link>
+  );
+};
+
 /** What the actor did, and the place or collection they did it to. */
-const describe = (item: FeedItem): { action: string; subject: string } => {
-  const collection = `「${item.collection_name}」`;
+const describe = (
+  item: FeedItem,
+): { action: ReactNode; subject: ReactNode } => {
+  const collection = <CollectionName item={item} quoted />;
   switch (item.type) {
     case "place_added":
       return {
-        action: `${collection}에 장소를 담았어요`,
+        action: <>{collection}에 장소를 담았어요</>,
         subject: item.place_name ?? "",
       };
     case "place_removed":
       return {
-        action: `${collection}에서 장소를 제외했어요`,
+        action: <>{collection}에서 장소를 제외했어요</>,
         subject: item.place_name ?? "",
       };
     case "collection_added":
-      return { action: "컬렉션을 공개했어요", subject: item.collection_name };
+      return {
+        action: "컬렉션을 공개했어요",
+        subject: <CollectionName item={item} />,
+      };
     case "collection_renamed":
       return {
         action: "컬렉션 이름을 바꿨어요",
-        subject: item.collection_name,
+        subject: <CollectionName item={item} />,
       };
     case "collection_removed":
-      return { action: "컬렉션을 삭제했어요", subject: item.collection_name };
+      return {
+        action: "컬렉션을 삭제했어요",
+        subject: <CollectionName item={item} />,
+      };
   }
 };
 
@@ -90,10 +117,23 @@ export const FeedPage = () => {
           const date = new Date(item.created_at);
           return (
             <li key={item.id} className="feed-card">
-              <UserAvatar user={item.actor} />
+              <Link
+                className="feed-card-avatar"
+                to={`/users/${item.actor.id}`}
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                <UserAvatar user={item.actor} />
+              </Link>
               <div className="feed-card-body">
                 <p>
-                  <strong>{item.actor.name}</strong> 님이 {action}
+                  <Link
+                    className="feed-card-link"
+                    to={`/users/${item.actor.id}`}
+                  >
+                    <strong>{item.actor.name}</strong>
+                  </Link>{" "}
+                  님이 {action}
                 </p>
                 <p className="feed-card-subject">{subject}</p>
                 <time dateTime={item.created_at} title={fullDate.format(date)}>
