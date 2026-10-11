@@ -175,13 +175,28 @@ def test_add_and_remove_record_history(client, engine):
     ]
 
 
-def test_others_collection_is_not_found(client, engine):
+def test_others_private_collection_is_not_found(client, engine):
+    _sign_in(BOB)
+    url = f"/api/collections/{_create(client)['id']}/places"
+    client.post(url, json=CAFE)
+
+    _sign_in(ALICE)
+    assert client.get(url).status_code == 404
+    assert client.post(url, json=BAR).status_code == 404
+    assert client.delete(f"{url}/kakao/1001").status_code == 404
+
+    _sign_in(BOB)
+    assert [p["id"] for p in client.get(url).json()] == ["1001"]
+    assert _place_history(engine) == [("place_added", "Cafes", False, "Cafe Onion")]
+
+
+def test_others_public_collection_is_read_only(client, engine):
     _sign_in(BOB)
     url = f"/api/collections/{_create(client, is_public=True)['id']}/places"
     client.post(url, json=CAFE)
 
     _sign_in(ALICE)
-    assert client.get(url).status_code == 404
+    assert [p["id"] for p in client.get(url).json()] == ["1001"]
     assert client.post(url, json=BAR).status_code == 404
     assert client.delete(f"{url}/kakao/1001").status_code == 404
 
@@ -208,13 +223,37 @@ def test_get_collection(client):
     assert res.json() == {**created, "place_count": 1}
 
 
-def test_get_others_or_missing_collection_is_not_found(client):
+def test_get_others_private_or_missing_collection_is_not_found(client):
     _sign_in(BOB)
-    bobs = _create(client, "Bob's", is_public=True)
+    bobs = _create(client, "Bob's")
 
     _sign_in(ALICE)
     assert client.get(f"/api/collections/{bobs['id']}").status_code == 404
     assert client.get(f"/api/collections/{uuid.uuid4()}").status_code == 404
+
+
+def test_get_others_public_collection(client):
+    _sign_in(BOB)
+    bobs = _create(client, "Bob's", is_public=True)
+    client.post(f"/api/collections/{bobs['id']}/places", json=CAFE)
+    assert bobs["is_owner"] is True
+    assert bobs["owner"]["id"] == BOB
+
+    _sign_in(ALICE)
+    res = client.get(f"/api/collections/{bobs['id']}")
+    assert res.status_code == 200
+    # The owner stays Bob; only the viewer's relation to it differs.
+    assert res.json() == {**bobs, "place_count": 1, "is_owner": False}
+
+
+def test_unpublishing_hides_the_collection_again(client):
+    _sign_in(BOB)
+    bobs = _create(client, "Bob's", is_public=True)
+    client.patch(f"/api/collections/{bobs['id']}", json={"is_public": False})
+
+    _sign_in(ALICE)
+    assert client.get(f"/api/collections/{bobs['id']}").status_code == 404
+    assert client.get(f"/api/collections/{bobs['id']}/places").status_code == 404
 
 
 def test_place_count(client):
