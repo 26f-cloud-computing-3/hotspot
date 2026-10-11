@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlalchemy import delete, func, literal, select
+from sqlalchemy import delete, func, literal, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -34,11 +34,21 @@ class CollectionUpdate(BaseModel):
     is_public: bool | None = None
 
 
+class OwnerOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    handle: str
+    avatar_url: str | None
+
+
 class CollectionOut(BaseModel):
     id: uuid.UUID
     name: str
     is_public: bool
     place_count: int
+    owner: OwnerOut
+    # Whether the signed-in user owns this collection; only the owner may change it.
+    is_owner: bool
     # Whether the place named in the list query is in this collection; null when none was named.
     contains_place: bool | None = None
     created_at: datetime
@@ -126,7 +136,10 @@ def list_my_collections(
         .where(Collection.owner_id == user.id)
         .order_by(Collection.created_at.desc(), Collection.id)
     )
-    return [_collection_out(collection, count, contains) for collection, count, contains in rows]
+    return [
+        _collection_out(collection, user, user, count, contains)
+        for collection, count, contains in rows
+    ]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -142,7 +155,7 @@ def create_collection(
     _record_history(db, collection, CollectionAction.CREATED)
     db.commit()
     db.refresh(collection)
-    return _collection_out(collection, 0)
+    return _collection_out(collection, user, user, 0)
 
 
 @router.get("/{collection_id}")
@@ -151,9 +164,9 @@ def get_collection(
     user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> CollectionOut:
-    """Return one of the signed-in user's collections."""
-    collection = _get_own_collection(db, user, collection_id)
-    return _collection_out(collection, _count_places(db, collection))
+    """Return a collection the signed-in user owns, or anyone's public one."""
+    collection, owner = _get_visible_collection(db, user, collection_id)
+    return _collection_out(collection, owner, user, _count_places(db, collection))
 
 
 @router.patch("/{collection_id}")
@@ -180,7 +193,7 @@ def update_collection(
         )
     db.commit()
     db.refresh(collection)
-    return _collection_out(collection, _count_places(db, collection))
+    return _collection_out(collection, user, user, _count_places(db, collection))
 
 
 @router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -207,8 +220,8 @@ def list_collection_places(
     user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> list[CollectionPlaceOut]:
-    """List the places in the signed-in user's collection, most recently added first."""
-    collection = _get_own_collection(db, user, collection_id)
+    """List the places in a collection the signed-in user may see, most recently added first."""
+    collection, _ = _get_visible_collection(db, user, collection_id)
     rows = db.scalars(
         select(CollectionPlace)
         .where(CollectionPlace.collection_id == collection.id)
@@ -293,6 +306,41 @@ def _get_own_collection(db: Session, user: User, collection_id: uuid.UUID) -> Co
     return collection
 
 
+def _get_visible_collection(
+    db: Session, user: User, collection_id: uuid.UUID
+) -> tuple[Collection, User]:
+    """A collection the user may read, with its owner: their own, or anyone's public one."""
+    row = db.execute(
+        select(Collection, User)
+        .join(User, User.id == Collection.owner_id)
+        .where(
+            Collection.id == collection_id,
+            or_(Collection.owner_id == user.id, Collection.is_public),
+        )
+    ).first()
+    # A private collection is reported as missing so its existence isn't revealed.
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Collection not found")
+    collection, owner = row
+    return collection, owner
+
+
+def list_public_collections(db: Session, owner: User, viewer: User) -> list[CollectionOut]:
+    """The collections `owner` has made public, newest first, as `viewer` sees them."""
+    place_count = (
+        select(func.count())
+        .select_from(CollectionPlace)
+        .where(CollectionPlace.collection_id == Collection.id)
+        .scalar_subquery()
+    )
+    rows = db.execute(
+        select(Collection, place_count)
+        .where(Collection.owner_id == owner.id, Collection.is_public)
+        .order_by(Collection.created_at.desc(), Collection.id)
+    )
+    return [_collection_out(collection, owner, viewer, count) for collection, count in rows]
+
+
 def _count_places(db: Session, collection: Collection) -> int:
     return db.scalar(
         select(func.count())
@@ -314,13 +362,21 @@ def _find_place(
 
 
 def _collection_out(
-    collection: Collection, place_count: int, contains_place: bool | None = None
+    collection: Collection,
+    owner: User,
+    viewer: User,
+    place_count: int,
+    contains_place: bool | None = None,
 ) -> CollectionOut:
     return CollectionOut(
         id=collection.id,
         name=collection.name,
         is_public=collection.is_public,
         place_count=place_count,
+        owner=OwnerOut(
+            id=owner.id, name=owner.name, handle=owner.handle, avatar_url=owner.avatar_url
+        ),
+        is_owner=owner.id == viewer.id,
         contains_place=contains_place,
         created_at=collection.created_at,
     )
