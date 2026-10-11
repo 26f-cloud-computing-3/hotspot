@@ -18,7 +18,7 @@ Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉�
 ## Project structure
 
 - `backend/` — FastAPI (Python 3.14, managed with `uv`). Serves the REST API.
-- `frontend/` — React 19 + TypeScript (Vite, pnpm). Map SDK integration UI.
+- `frontend/` — React 19 + TypeScript (Vite, pnpm). Map SDK integration UI. 코드를 작성·수정할 때는 `.claude/skills/typescript`, `.claude/skills/react` 스킬의 코딩 컨벤션을 따른다.
 
 ## Commands
 
