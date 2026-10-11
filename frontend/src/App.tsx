@@ -13,7 +13,7 @@ import { PlaceSearch } from "./features/map/PlaceSearch";
 import { queryClient } from "./lib/query";
 import { HomePage } from "./pages/HomePage";
 
-const App = () => {
+export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -41,5 +41,3 @@ const App = () => {
     </QueryClientProvider>
   );
 };
-
-export default App;
