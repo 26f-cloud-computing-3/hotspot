@@ -1,80 +1,37 @@
-import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { Link, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
-import { ApiError } from "../../lib/api";
+import { isNotFound } from "../../lib/api";
+import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { useAuth } from "../auth/AuthProvider";
-import type { Collection } from "../collections/api";
-import {
-  follow,
-  getUserProfile,
-  listUserCollections,
-  type UserProfile,
-  unfollow,
-} from "./api";
+import { getUserProfile, listUserCollections, type UserProfile } from "./api";
 import { ProfileDialog } from "./ProfileDialog";
 import { UserAvatar } from "./UserAvatar";
+import { useToggleFollow } from "./useToggleFollow";
 import "../collections/CollectionsPage.css";
 import "../collections/CollectionDetailPage.css";
 import "./FollowersPage.css";
-
-type LoadError = "missing" | "failed";
 
 /** A user and the collections they have made public; the same view for every visitor. */
 export function UserProfilePage() {
   const { userId = "" } = useParams();
   const { me, setMe } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [collections, setCollections] = useState<Collection[] | null>(null);
-  const [loadError, setLoadError] = useState<LoadError | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const profileQuery = useQuery({
+    queryKey: queryKeys.users.profile(userId),
+    queryFn: () => getUserProfile(userId),
+  });
+  const collectionsQuery = useQuery({
+    queryKey: queryKeys.users.collections(userId),
+    queryFn: () => listUserCollections(userId),
+  });
+  const profile = profileQuery.data;
+  const collections = collectionsQuery.data;
+  const missing =
+    isNotFound(profileQuery.error) || isNotFound(collectionsQuery.error);
+  const { toggleFollow, pending, error } = useToggleFollow();
   const editDialog = useRef<HTMLDialogElement>(null);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
-  useEffect(() => {
-    let cancelled = false;
-    setLoadError(null);
-    setProfile(null);
-    setCollections(null);
-    setError("");
-    Promise.all([getUserProfile(userId), listUserCollections(userId)])
-      .then(([loadedProfile, loadedCollections]) => {
-        if (cancelled) return;
-        setProfile(loadedProfile);
-        setCollections(loadedCollections);
-      })
-      .catch((cause) => {
-        if (cancelled) return;
-        // 422 is an id that is not a UUID, which no user can have.
-        const missing =
-          cause instanceof ApiError &&
-          (cause.status === 404 || cause.status === 422);
-        setLoadError(missing ? "missing" : "failed");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, attempt]);
-
-  async function toggleFollow(user: UserProfile) {
-    const next = !user.is_following;
-    setError("");
-    setPending(true);
-    setProfile({ ...user, is_following: next });
-    try {
-      await (next ? follow(user.id) : unfollow(user.id));
-    } catch {
-      setProfile(user);
-      setError(
-        next
-          ? `${user.name} 님을 팔로우하지 못했습니다. 다시 시도해 주세요.`
-          : `${user.name} 님 팔로우를 취소하지 못했습니다. 다시 시도해 주세요.`,
-      );
-    } finally {
-      setPending(false);
-    }
-  }
 
   // My own profile is opened from the sidebar, so there is no list to go back to.
   const backLink =
@@ -85,12 +42,12 @@ export function UserProfilePage() {
       </Link>
     );
 
-  if (loadError) {
+  if (missing || loadFailed(profileQuery, collectionsQuery)) {
     return (
       <>
         {backLink}
         <section className="empty-panel" role="alert">
-          {loadError === "missing" ? (
+          {missing ? (
             <p>찾을 수 없는 유저입니다.</p>
           ) : (
             <>
@@ -98,7 +55,7 @@ export function UserProfilePage() {
               <button
                 type="button"
                 className="button button-secondary"
-                onClick={() => setAttempt((value) => value + 1)}
+                onClick={() => retryLoad(profileQuery, collectionsQuery)}
               >
                 다시 시도
               </button>
@@ -108,7 +65,7 @@ export function UserProfilePage() {
       </>
     );
   }
-  if (profile === null || collections === null) {
+  if (profile === undefined || collections === undefined) {
     return (
       <>
         {backLink}
@@ -147,16 +104,16 @@ export function UserProfilePage() {
             className={`button ${profile.is_following ? "button-secondary" : "button-primary"}`}
             aria-pressed={profile.is_following}
             aria-label={`${profile.name} ${profile.is_following ? "팔로우 취소" : "팔로우"}`}
-            disabled={pending}
+            disabled={pending.has(profile.id)}
             onClick={() => toggleFollow(profile)}
           >
             {profile.is_following ? "팔로잉" : "팔로우"}
           </button>
         )}
       </header>
-      {error && (
+      {error?.userId === profile.id && (
         <p className="follow-status follow-error" role="alert">
-          {error}
+          {error.message}
         </p>
       )}
       {collections.length === 0 ? (
@@ -202,7 +159,10 @@ export function UserProfilePage() {
           me={me}
           onSaved={(saved) => {
             setMe(saved);
-            setProfile({ ...profile, name: saved.name, handle: saved.handle });
+            queryClient.setQueryData<UserProfile>(
+              queryKeys.users.profile(profile.id),
+              { ...profile, name: saved.name, handle: saved.handle },
+            );
           }}
         />
       )}
