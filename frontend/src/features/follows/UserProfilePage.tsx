@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
 import { ApiError } from "../../lib/api";
+import { useAuth } from "../auth/AuthProvider";
 import type { Collection } from "../collections/api";
 import {
   follow,
@@ -20,6 +21,7 @@ type LoadError = "missing" | "failed";
 /** A user and the collections they have made public; the same view for every visitor. */
 export function UserProfilePage() {
   const { userId = "" } = useParams();
+  const { me } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [collections, setCollections] = useState<Collection[] | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
@@ -72,12 +74,14 @@ export function UserProfilePage() {
     }
   }
 
-  const backLink = (
-    <Link className="back-link" to="/followers">
-      <Icon name="back" />
-      팔로워
-    </Link>
-  );
+  // My own profile is opened from the sidebar, so there is no list to go back to.
+  const backLink =
+    me?.id === userId ? null : (
+      <Link className="back-link" to="/followers">
+        <Icon name="back" />
+        팔로워
+      </Link>
+    );
 
   if (loadError) {
     return (
@@ -121,6 +125,7 @@ export function UserProfilePage() {
         <span className="user-identity">
           <strong>{profile.name}</strong>
           <small>@{profile.handle}</small>
+          {profile.is_me && me?.email && <small>{me.email}</small>}
         </span>
         {profile.is_me ? (
           <Link className="button button-secondary" to="/collections">

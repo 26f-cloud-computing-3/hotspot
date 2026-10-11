@@ -33,6 +33,12 @@
 .sidebar-footer {
   @apply mt-auto pt-[var(--space-xl)];
 }
+.nav-profile {
+  @apply mb-[var(--space-sm)] px-[var(--space-md)] font-normal;
+}
+.nav-profile .user-avatar {
+  @apply size-9;
+}
 .logout {
   @apply border-t-[length:var(--border-width)] border-solid border-[var(--color-line)];
 }

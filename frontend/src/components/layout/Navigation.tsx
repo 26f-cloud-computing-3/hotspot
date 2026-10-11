@@ -1,9 +1,17 @@
+import type { Me } from "../../features/auth/AuthProvider";
+import { UserAvatar } from "../../features/follows/UserAvatar";
 import { Icon } from "../Icon";
-import { NAVIGATION_ITEMS, type Page } from "./navigationItems";
+import {
+  type ActivePage,
+  NAVIGATION_ITEMS,
+  type Page,
+} from "./navigationItems";
 
 export interface NavigationProps {
-  page: Page;
+  page: ActivePage;
   onNavigate: (page: Page) => void;
+  me: Me | null;
+  onOpenProfile: () => void;
   signingOut: boolean;
   onSignOut: () => void;
 }
@@ -11,6 +19,8 @@ export interface NavigationProps {
 export function Navigation({
   page,
   onNavigate,
+  me,
+  onOpenProfile,
   signingOut,
   onSignOut,
 }: NavigationProps) {
@@ -31,6 +41,21 @@ export function Navigation({
         ))}
       </nav>
       <div className="sidebar-footer">
+        {me && (
+          <button
+            type="button"
+            className="nav-item nav-profile"
+            aria-label={`내 프로필 (${me.name})`}
+            aria-current={page === "me" ? "page" : undefined}
+            onClick={onOpenProfile}
+          >
+            <UserAvatar user={me} />
+            <span className="user-identity">
+              <strong>{me.name}</strong>
+              <small>@{me.handle}</small>
+            </span>
+          </button>
+        )}
         <button
           type="button"
           className="nav-item logout"
