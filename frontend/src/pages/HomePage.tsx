@@ -26,15 +26,15 @@ interface PageOverride {
  * (someone else's collection is opened from the followers tab). Pass null to keep
  * the tab the path implies.
  */
-export function useActivePage(page: Page | null) {
+export const useActivePage = (page: Page | null) => {
   const setOverride = useOutletContext<(override: PageOverride) => void>();
   const { pathname } = useLocation();
   useEffect(() => {
     if (page) setOverride({ pathname, page });
   }, [page, pathname, setOverride]);
-}
+};
 
-export function HomePage() {
+export const HomePage = () => {
   const { signOut, me } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [notice, setNotice] = useState("");
@@ -55,11 +55,11 @@ export function HomePage() {
   const page = onMyProfile ? "me" : activePage.id;
   const title = onMyProfile ? "내 프로필" : activePage.label;
 
-  function navigate(next: Page) {
+  const navigate = (next: Page) => {
     navigateTo(`/${next}`);
     setNotice("");
-  }
-  async function handleSignOut() {
+  };
+  const handleSignOut = async () => {
     setSigningOut(true);
     setNotice("");
     try {
@@ -69,7 +69,7 @@ export function HomePage() {
     } finally {
       setSigningOut(false);
     }
-  }
+  };
   return (
     <AppShell
       page={page}
@@ -104,4 +104,4 @@ export function HomePage() {
       <Outlet context={setOverride} />
     </AppShell>
   );
-}
+};

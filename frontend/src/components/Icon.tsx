@@ -17,7 +17,7 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name }: { name: IconName }) {
+export const Icon = ({ name }: { name: IconName }) => {
   return (
     <svg
       className="icon"
@@ -32,4 +32,4 @@ export function Icon({ name }: { name: IconName }) {
       <path d={PATHS[name]} />
     </svg>
   );
-}
+};

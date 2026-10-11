@@ -9,7 +9,7 @@ interface AppShellProps extends NavigationProps {
   children: ReactNode;
 }
 
-export function AppShell({
+export const AppShell = ({
   children,
   page,
   onNavigate,
@@ -17,7 +17,7 @@ export function AppShell({
   onOpenProfile,
   signingOut,
   onSignOut,
-}: AppShellProps) {
+}: AppShellProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [desktop, setDesktop] = useState(
@@ -44,26 +44,26 @@ export function AppShell({
     };
   }, [drawerOpen]);
 
-  function toggleNavigation() {
+  const toggleNavigation = () => {
     if (window.matchMedia("(min-width: 768px)").matches) {
       setCollapsed((value) => !value);
     } else {
       drawer.current?.showModal();
       setDrawerOpen(true);
     }
-  }
-  function navigate(next: Page) {
+  };
+  const navigate = (next: Page) => {
     onNavigate(next);
     drawer.current?.close();
-  }
-  function openProfile() {
+  };
+  const openProfile = () => {
     onOpenProfile();
     drawer.current?.close();
-  }
-  function signOut() {
+  };
+  const signOut = () => {
     drawer.current?.close();
     onSignOut();
-  }
+  };
   const navigationProps = {
     page,
     onNavigate: navigate,
@@ -98,4 +98,4 @@ export function AppShell({
       </main>
     </div>
   );
-}
+};

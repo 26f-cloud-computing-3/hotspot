@@ -3,9 +3,9 @@ import { QueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { ApiError } from "./api";
 
 /** A 4xx answer is final: asking again gets the same one. */
-function isClientError(error: unknown): boolean {
+const isClientError = (error: unknown): boolean => {
   return error instanceof ApiError && error.status >= 400 && error.status < 500;
-}
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,19 +49,19 @@ type LoadState = Pick<UseQueryResult, "data" | "isError" | "isFetching">;
  * Whether the first load of `queries` has given up. A refetch that fails later is not
  * a failed load: the data from before is still there to show.
  */
-export function loadFailed(...queries: LoadState[]): boolean {
+export const loadFailed = (...queries: LoadState[]): boolean => {
   const waiting = queries.filter((query) => query.data === undefined);
   return (
     waiting.some((query) => query.isError) &&
     !waiting.some((query) => query.isFetching)
   );
-}
+};
 
 /** Asks again for what `loadFailed` reported. */
-export function retryLoad(
+export const retryLoad = (
   ...queries: Pick<UseQueryResult, "data" | "refetch">[]
-): void {
+): void => {
   for (const query of queries) {
     if (query.data === undefined) void query.refetch();
   }
-}
+};

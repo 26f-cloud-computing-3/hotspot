@@ -26,7 +26,7 @@ interface MapViewContainerProps {
   startAtCurrentLocation?: boolean;
 }
 
-export function MapView({
+export const MapView = ({
   center,
   level,
   places,
@@ -37,7 +37,7 @@ export function MapView({
   fitPlaces,
   onPlaceSave,
   startAtCurrentLocation,
-}: MapViewContainerProps) {
+}: MapViewContainerProps) => {
   // The provider is fixed by the backend's configuration, so one answer lasts the visit.
   const { data: config, error } = useQuery({
     queryKey: queryKeys.mapConfig,
@@ -64,4 +64,4 @@ export function MapView({
       startAtCurrentLocation={startAtCurrentLocation}
     />
   );
-}
+};

@@ -13,7 +13,7 @@ const fullDate = new Intl.DateTimeFormat("ko", {
 });
 
 /** What the actor did, and the place or collection they did it to. */
-function describe(item: FeedItem): { action: string; subject: string } {
+const describe = (item: FeedItem): { action: string; subject: string } => {
   const collection = `「${item.collection_name}」`;
   switch (item.type) {
     case "place_added":
@@ -36,9 +36,9 @@ function describe(item: FeedItem): { action: string; subject: string } {
     case "collection_removed":
       return { action: "컬렉션을 삭제했어요", subject: item.collection_name };
   }
-}
+};
 
-export function FeedPage() {
+export const FeedPage = () => {
   const feedQuery = useInfiniteQuery({
     queryKey: queryKeys.feed,
     queryFn: ({ pageParam }) => getFeed(pageParam),
@@ -123,4 +123,4 @@ export function FeedPage() {
       )}
     </section>
   );
-}
+};

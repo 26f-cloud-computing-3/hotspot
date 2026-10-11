@@ -37,12 +37,12 @@ interface CollectionDialogProps {
   onClose?: () => void;
 }
 
-export function CollectionDialog({
+export const CollectionDialog = ({
   dialogRef,
   collection,
   onSaved,
   onClose,
-}: CollectionDialogProps) {
+}: CollectionDialogProps) => {
   const initialName = collection?.name ?? "";
   const initialIsPublic = collection?.is_public ?? false;
   const [name, setName] = useState(initialName);
@@ -72,13 +72,13 @@ export function CollectionDialog({
   const labels = editing ? LABELS.edit : LABELS.create;
   const unchanged = name.trim() === initialName && isPublic === initialIsPublic;
 
-  function reset() {
+  const reset = () => {
     setName(initialName);
     setIsPublic(initialIsPublic);
     setError("");
     setConfirmingDelete(false);
-  }
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  };
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     try {
@@ -91,8 +91,8 @@ export function CollectionDialog({
     } catch {
       setError(labels.error);
     }
-  }
-  async function handleDelete() {
+  };
+  const handleDelete = async () => {
     if (!collection) return;
     setError("");
     try {
@@ -101,7 +101,7 @@ export function CollectionDialog({
     } catch {
       setError("컬렉션을 삭제하지 못했습니다. 다시 시도해 주세요.");
     }
-  }
+  };
   const errorMessage = error && (
     <p className="form-error" role="alert">
       {error}
@@ -212,4 +212,4 @@ export function CollectionDialog({
       )}
     </dialog>
   );
-}
+};

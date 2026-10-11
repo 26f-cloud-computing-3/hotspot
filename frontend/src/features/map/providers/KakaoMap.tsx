@@ -25,7 +25,7 @@ const LOCATE_TIMEOUT_MS = 10000;
 // A recent fix is close enough to open the map on, and comes back at once.
 const INITIAL_LOCATION_MAX_AGE_MS = 60000;
 
-export function KakaoMap({
+export const KakaoMap = ({
   clientKey,
   center,
   level = 3,
@@ -37,7 +37,7 @@ export function KakaoMap({
   fitPlaces = true,
   onPlaceSave,
   startAtCurrentLocation = false,
-}: MapViewProps) {
+}: MapViewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Kakao Maps SDK ships no official types
   const mapRef = useRef<any>(null);
@@ -291,4 +291,4 @@ export function KakaoMap({
         )}
     </div>
   );
-}
+};

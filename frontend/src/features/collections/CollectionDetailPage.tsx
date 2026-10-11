@@ -21,12 +21,12 @@ import "./CollectionDetailPage.css";
 // Only where the map starts; it then fits itself to the collection's places.
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
 
-function placeKey(place: Place) {
+const placeKey = (place: Place) => {
   return `${place.provider}-${place.id}`;
-}
+};
 
 /** My collection, which I can edit, or someone else's public one, which I can only read. */
-export function CollectionDetailPage() {
+export const CollectionDetailPage = () => {
   const { collectionId = "" } = useParams();
   // Set by the profile screen, so the way back is known before (or without) the load.
   const fromOwnerId: string | undefined = useLocation().state?.ownerId;
@@ -61,7 +61,7 @@ export function CollectionDetailPage() {
     setSelectedPlaceId(null);
   }, []);
 
-  async function remove(place: Place) {
+  const remove = async (place: Place) => {
     const key = placeKey(place);
     setRemovingKeys((keys) => [...keys, key]);
     setError("");
@@ -80,7 +80,7 @@ export function CollectionDetailPage() {
     } finally {
       setRemovingKeys((keys) => keys.filter((item) => item !== key));
     }
-  }
+  };
 
   const ownerId = readOnly ? (collection?.owner.id ?? fromOwnerId) : undefined;
   const backLink = ownerId ? (
@@ -246,4 +246,4 @@ export function CollectionDetailPage() {
       )}
     </section>
   );
-}
+};

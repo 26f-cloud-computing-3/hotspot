@@ -4,7 +4,7 @@ import { Navigate } from "react-router";
 import { useAuth } from "./AuthProvider";
 import "./LoginPage.css";
 
-export function LoginPage() {
+export const LoginPage = () => {
   const { session, loading, signInWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -36,4 +36,4 @@ export function LoginPage() {
       </div>
     </main>
   );
-}
+};

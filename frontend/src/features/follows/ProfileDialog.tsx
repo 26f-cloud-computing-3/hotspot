@@ -17,7 +17,11 @@ interface ProfileDialogProps {
 }
 
 /** Edits the signed-in user's name and handle. */
-export function ProfileDialog({ dialogRef, me, onSaved }: ProfileDialogProps) {
+export const ProfileDialog = ({
+  dialogRef,
+  me,
+  onSaved,
+}: ProfileDialogProps) => {
   const [name, setName] = useState(me.name);
   const [handle, setHandle] = useState(me.handle);
   const [saving, setSaving] = useState(false);
@@ -32,12 +36,12 @@ export function ProfileDialog({ dialogRef, me, onSaved }: ProfileDialogProps) {
     !handleChanged ||
     (HANDLE_PATTERN.test(handle) && handle.length >= HANDLE_MIN_LENGTH);
 
-  function reset() {
+  const reset = () => {
     setName(me.name);
     setHandle(me.handle);
     setError("");
-  }
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  };
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
     setError("");
@@ -58,7 +62,7 @@ export function ProfileDialog({ dialogRef, me, onSaved }: ProfileDialogProps) {
     } finally {
       setSaving(false);
     }
-  }
+  };
   return (
     <dialog
       ref={dialogRef}
@@ -139,4 +143,4 @@ export function ProfileDialog({ dialogRef, me, onSaved }: ProfileDialogProps) {
       </form>
     </dialog>
   );
-}
+};

@@ -7,11 +7,11 @@ interface MobileDrawerProps {
   children: ReactNode;
 }
 
-export function MobileDrawer({
+export const MobileDrawer = ({
   dialogRef,
   onClose,
   children,
-}: MobileDrawerProps) {
+}: MobileDrawerProps) => {
   return (
     <dialog
       ref={dialogRef}
@@ -44,4 +44,4 @@ export function MobileDrawer({
       </div>
     </dialog>
   );
-}
+};

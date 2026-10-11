@@ -8,16 +8,16 @@ interface PlaceCardProps {
 }
 
 // Kakao categories arrive as "음식점 > 카페 > 커피전문점"; the last segment is the most specific.
-function shortCategory(category: string | null) {
+const shortCategory = (category: string | null) => {
   return category?.split(">").at(-1)?.trim() || null;
-}
+};
 
 // Naver has no lookup by another provider's place id, so link to a name search instead.
-function naverMapUrl(name: string) {
+const naverMapUrl = (name: string) => {
   return `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
-}
+};
 
-export function PlaceCard({ place, onClose, onSave }: PlaceCardProps) {
+export const PlaceCard = ({ place, onClose, onSave }: PlaceCardProps) => {
   const category = shortCategory(place.category);
   const address = place.road_address || place.address;
 
@@ -54,4 +54,4 @@ export function PlaceCard({ place, onClose, onSave }: PlaceCardProps) {
       )}
     </article>
   );
-}
+};

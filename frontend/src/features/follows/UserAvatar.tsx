@@ -5,7 +5,7 @@ interface UserAvatarProps {
 }
 
 /** Decorative: the user's name is always shown next to it. */
-export function UserAvatar({ user }: UserAvatarProps) {
+export const UserAvatar = ({ user }: UserAvatarProps) => {
   return user.avatar_url ? (
     <img
       className="user-avatar"
@@ -18,4 +18,4 @@ export function UserAvatar({ user }: UserAvatarProps) {
       {user.name.slice(0, 1)}
     </span>
   );
-}
+};

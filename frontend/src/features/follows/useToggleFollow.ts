@@ -3,11 +3,11 @@ import { useState } from "react";
 import { queryKeys } from "../../lib/query";
 import { type FollowUser, follow, type UserProfile, unfollow } from "./api";
 
-function withFollowing(users: FollowUser[], id: string, value: boolean) {
+const withFollowing = (users: FollowUser[], id: string, value: boolean) => {
   return users.map((user) =>
     user.id === id ? { ...user, is_following: value } : user,
   );
-}
+};
 
 interface FollowError {
   userId: string;
@@ -18,12 +18,12 @@ interface FollowError {
  * Follows or unfollows a user, showing the change on every screen at once and taking
  * it back if the server refuses.
  */
-export function useToggleFollow() {
+export const useToggleFollow = () => {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState<FollowError | null>(null);
 
-  function applyFollowing(user: FollowUser, value: boolean) {
+  const applyFollowing = (user: FollowUser, value: boolean) => {
     queryClient.setQueriesData<FollowUser[]>(
       { queryKey: queryKeys.users.searches },
       (users) => users && withFollowing(users, user.id, value),
@@ -48,9 +48,9 @@ export function useToggleFollow() {
       queryKeys.users.profile(user.id),
       (profile) => profile && { ...profile, is_following: value },
     );
-  }
+  };
 
-  async function toggleFollow(user: FollowUser) {
+  const toggleFollow = async (user: FollowUser) => {
     const next = !user.is_following;
     const wasListed =
       queryClient
@@ -84,7 +84,7 @@ export function useToggleFollow() {
         return rest;
       });
     }
-  }
+  };
 
   return { toggleFollow, pending, error };
-}
+};

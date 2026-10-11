@@ -16,14 +16,14 @@ export interface NavigationProps {
   onSignOut: () => void;
 }
 
-export function Navigation({
+export const Navigation = ({
   page,
   onNavigate,
   me,
   onOpenProfile,
   signingOut,
   onSignOut,
-}: NavigationProps) {
+}: NavigationProps) => {
   return (
     <>
       <nav className="navigation" aria-label="주 내비게이션">
@@ -68,4 +68,4 @@ export function Navigation({
       </div>
     </>
   );
-}
+};
