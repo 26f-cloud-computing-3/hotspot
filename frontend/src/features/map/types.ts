@@ -47,4 +47,9 @@ export interface MapViewProps {
   fitPlaces?: boolean;
   /** When set, the selected place's card offers to save it into a collection. */
   onPlaceSave?: (place: Place) => void;
+  /**
+   * Ask for the user's position once the map is up and move there. `center` is
+   * shown meanwhile, and stays if the position is refused or unavailable.
+   */
+  startAtCurrentLocation?: boolean;
 }

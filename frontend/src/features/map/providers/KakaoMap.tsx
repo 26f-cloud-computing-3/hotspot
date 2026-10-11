@@ -22,6 +22,8 @@ const CARD_ROOM = 96;
 // How far from a tap, in screen pixels, a place still counts as the one tapped.
 const TAP_RADIUS_PX = 40;
 const LOCATE_TIMEOUT_MS = 10000;
+// A recent fix is close enough to open the map on, and comes back at once.
+const INITIAL_LOCATION_MAX_AGE_MS = 60000;
 
 export function KakaoMap({
   clientKey,
@@ -34,6 +36,7 @@ export function KakaoMap({
   onMapClick,
   fitPlaces = true,
   onPlaceSave,
+  startAtCurrentLocation = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/suspicious/noExplicitAny: Kakao Maps SDK ships no official types
@@ -48,6 +51,9 @@ export function KakaoMap({
 
   const selectedPlace =
     places?.find((place) => place.id === selectedPlaceId) ?? null;
+  // Whether places are already on the map, read when the first position arrives.
+  const hasPlacesRef = useRef(false);
+  hasPlacesRef.current = Boolean(places?.length);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +207,29 @@ export function KakaoMap({
 
     return () => overlay.setMap(null);
   }, [isReady, location]);
+
+  // Opens on the user's position when it can be had. The map is already showing
+  // `center`, so a refusal or failure just leaves it there without a message.
+  useEffect(() => {
+    if (!isReady || !startAtCurrentLocation || !navigator.geolocation) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (cancelled) return;
+        setLocation({ lat: coords.latitude, lng: coords.longitude });
+        // Results that arrived first are what the user is looking at; leave them in view.
+        if (hasPlacesRef.current) return;
+        mapRef.current?.setCenter(
+          new window.kakao.maps.LatLng(coords.latitude, coords.longitude),
+        );
+      },
+      () => {},
+      { timeout: LOCATE_TIMEOUT_MS, maximumAge: INITIAL_LOCATION_MAX_AGE_MS },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [isReady, startAtCurrentLocation]);
 
   const locate = () => {
     if (!navigator.geolocation) {
