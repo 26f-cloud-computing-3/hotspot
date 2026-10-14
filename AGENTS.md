@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Product context
 
-Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉션을 팔로워 피드로 공유하는 웹 서비스 (데스크톱/모바일 반응형). 화면 6종: 로그인(Google) · 피드 · 장소 찾기 · 컬렉션 · 컬렉션 상세 · 팔로워. 요약은 `docs/product.md`, 원본은 Notion 기획안. 기능을 구현하기 전에 `docs/product.md`를 먼저 확인할 것. UI를 만들 때는 루트 `DESIGN.md`(디자인 시스템: 컬러/타이포/컴포넌트 토큰)를 따른다. 색·간격·라디우스는 하드코딩하지 말고 토큰(CSS 변수)으로 참조한다.
+Hotspot — 좋아하는 장소를 컬렉션으로 모으고, 공개한 컬렉션을 팔로워 피드로 공유하는 웹 서비스 (데스크톱/모바일 반응형). 화면 7종: 로그인(Google) · 피드 · 장소 찾기 · 인기 · 컬렉션 · 컬렉션 상세 · 팔로워. 요약은 `docs/product.md`, 원본은 Notion 기획안. 기능을 구현하기 전에 `docs/product.md`를 먼저 확인할 것. UI를 만들 때는 루트 `DESIGN.md`(디자인 시스템: 컬러/타이포/컴포넌트 토큰)를 따른다. 색·간격·라디우스는 하드코딩하지 말고 토큰(CSS 변수)으로 참조한다.
 
 ## Git workflow (MUST follow)
 
