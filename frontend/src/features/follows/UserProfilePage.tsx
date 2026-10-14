@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { Link, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
+import { ShareLinkButton } from "../../components/ShareLinkButton";
 import { isNotFound } from "../../lib/api";
 import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { useAuth } from "../auth/AuthProvider";
@@ -85,31 +86,38 @@ export const UserProfilePage = () => {
           <strong>{profile.name}</strong>
           <small>@{profile.handle}</small>
         </span>
-        {profile.is_me ? (
-          <span className="profile-actions">
+        <span className="profile-actions">
+          {profile.is_me ? (
+            <>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => editDialog.current?.showModal()}
+              >
+                프로필 수정
+              </button>
+              <Link className="button button-secondary" to="/collections">
+                내 컬렉션 관리
+              </Link>
+            </>
+          ) : (
             <button
               type="button"
-              className="button button-secondary"
-              onClick={() => editDialog.current?.showModal()}
+              className={`button ${profile.is_following ? "button-secondary" : "button-primary"}`}
+              aria-pressed={profile.is_following}
+              aria-label={`${profile.name} ${profile.is_following ? "팔로우 취소" : "팔로우"}`}
+              disabled={pending.has(profile.id)}
+              onClick={() => toggleFollow(profile)}
             >
-              프로필 수정
+              {profile.is_following ? "팔로잉" : "팔로우"}
             </button>
-            <Link className="button button-secondary" to="/collections">
-              내 컬렉션 관리
-            </Link>
-          </span>
-        ) : (
-          <button
-            type="button"
-            className={`button ${profile.is_following ? "button-secondary" : "button-primary"}`}
-            aria-pressed={profile.is_following}
-            aria-label={`${profile.name} ${profile.is_following ? "팔로우 취소" : "팔로우"}`}
-            disabled={pending.has(profile.id)}
-            onClick={() => toggleFollow(profile)}
-          >
-            {profile.is_following ? "팔로잉" : "팔로우"}
-          </button>
-        )}
+          )}
+          {/* A profile only lists public collections, so it can always be shared. */}
+          <ShareLinkButton
+            path={`/users/${profile.id}`}
+            title={`${profile.name}님의 컬렉션 · Hotspot`}
+          />
+        </span>
       </header>
       {error?.userId === profile.id && (
         <p className="follow-status follow-error" role="alert">
