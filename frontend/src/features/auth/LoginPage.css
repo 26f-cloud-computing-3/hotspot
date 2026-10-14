@@ -50,6 +50,43 @@
   background: var(--color-primary-pressed);
 }
 
+.login__in-app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  text-align: left;
+  background: var(--color-card);
+  border-radius: var(--radius-md);
+}
+
+.login__in-app p {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-body);
+}
+
+.login__copy {
+  align-self: flex-start;
+  min-height: var(--button-height);
+  padding: var(--space-xs) var(--space-lg);
+  font-size: var(--font-small);
+  font-weight: 700;
+  color: var(--color-ink);
+  background: var(--color-secondary);
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.login__copy:hover,
+.login__copy:active {
+  background: var(--color-secondary-pressed);
+}
+
+.login__in-app .login__copy-status {
+  color: var(--color-muted);
+}
+
 .login__error {
   margin: 0;
   font-size: 14px;
