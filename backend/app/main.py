@@ -6,6 +6,7 @@ from app.api.feed import router as feed_router
 from app.api.follows import router as follows_router
 from app.api.map import router as map_router
 from app.api.me import router as me_router
+from app.api.places import router as places_router
 from app.api.search_histories import router as search_histories_router
 from app.core.config import get_settings
 
@@ -26,6 +27,7 @@ app.include_router(feed_router)
 app.include_router(follows_router)
 app.include_router(map_router)
 app.include_router(me_router)
+app.include_router(places_router)
 app.include_router(search_histories_router)
 
 
