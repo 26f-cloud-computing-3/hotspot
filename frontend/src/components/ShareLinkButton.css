@@ -1,0 +1,9 @@
+@reference "../index.css";
+
+.share-link {
+  @apply inline-flex items-center;
+}
+/* Kept in the DOM while empty so screen readers announce it, but it takes no room then. */
+.share-link-status:not(:empty) {
+  @apply ml-[var(--space-sm)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}

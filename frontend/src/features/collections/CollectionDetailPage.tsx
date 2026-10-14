@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { Icon } from "../../components/Icon";
+import { ShareLinkButton } from "../../components/ShareLinkButton";
 import { isNotFound } from "../../lib/api";
 import { loadFailed, queryKeys, retryLoad } from "../../lib/query";
 import { useActivePage } from "../../pages/HomePage";
@@ -142,6 +143,15 @@ export const CollectionDetailPage = () => {
         <p className="collections-status" role="status">
           장소 {places.length}개
         </p>
+        <ShareLinkButton
+          path={`/collections/${collection.id}`}
+          title={`${collection.name} · Hotspot`}
+          blockedReason={
+            collection.is_public
+              ? undefined
+              : "비공개 컬렉션이라 친구가 볼 수 없어요. 공개로 바꾸면 링크로 나눌 수 있어요."
+          }
+        />
         {!collection.is_owner && (
           <Link
             className="user-link collection-owner"

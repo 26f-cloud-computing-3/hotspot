@@ -74,7 +74,8 @@
   .profile-actions {
     @apply w-full;
   }
-  .profile-actions .button {
+  .profile-actions .button,
+  .profile-actions .share-link {
     @apply flex-1;
   }
 }
