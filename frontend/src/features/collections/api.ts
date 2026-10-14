@@ -97,7 +97,8 @@ export const removePlaceFromCollection = (
 
 /**
  * Marks every cached collection out of date after one of mine changed, and resolves
- * once the lists on screen are fresh. A profile shows its user's collections too.
+ * once the lists on screen are fresh. A profile shows its user's collections too, and
+ * the popular places tell which of them I have saved.
  */
 export const invalidateCollections = async (
   queryClient: QueryClient,
@@ -105,5 +106,6 @@ export const invalidateCollections = async (
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.collections.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.popularPlaces }),
   ]);
 };

@@ -8,7 +8,7 @@ interface PlaceCardProps {
 }
 
 // Kakao categories arrive as "음식점 > 카페 > 커피전문점"; the last segment is the most specific.
-const shortCategory = (category: string | null) => {
+export const shortCategory = (category: string | null) => {
   return category?.split(">").at(-1)?.trim() || null;
 };
 

@@ -22,6 +22,7 @@ export const queryKeys = {
   me: (userId: string | undefined) => ["me", userId] as const,
   mapConfig: ["map", "config"] as const,
   feed: ["feed"] as const,
+  popularPlaces: ["places", "popular"] as const,
   collections: {
     all: ["collections"] as const,
     mine: ["collections", "mine"] as const,
