@@ -10,6 +10,7 @@ import { FeedPage } from "./features/feed/FeedPage";
 import { FollowersPage } from "./features/follows/FollowersPage";
 import { UserProfilePage } from "./features/follows/UserProfilePage";
 import { PlaceSearch } from "./features/map/PlaceSearch";
+import { PopularPage } from "./features/popular/PopularPage";
 import { queryClient } from "./lib/query";
 import { HomePage } from "./pages/HomePage";
 
@@ -24,6 +25,7 @@ export const App = () => {
             <Route element={<RequireAuth />}>
               <Route element={<HomePage />}>
                 <Route path="/places" element={<PlaceSearch />} />
+                <Route path="/popular" element={<PopularPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route
                   path="/collections/:collectionId"

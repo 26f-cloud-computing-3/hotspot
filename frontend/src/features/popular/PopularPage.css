@@ -1,0 +1,59 @@
+@reference "../../index.css";
+
+.popular-status {
+  @apply m-0 mb-[var(--space-lg)] text-[color:var(--color-muted)];
+}
+.popular-link {
+  @apply no-underline hover:bg-[var(--color-primary-pressed)];
+}
+.popular-list {
+  @apply grid grid-cols-2 gap-[var(--space-sm)] m-0 mt-[var(--space-xl)] p-0 list-none;
+}
+.popular-list li {
+  @apply grid gap-[var(--space-xs)] min-w-0 pb-[var(--space-md)] border-[length:var(--border-width)] border-solid border-[var(--color-line)] rounded-[var(--radius-md)] bg-[var(--color-canvas)];
+}
+.popular-list li.is-selected {
+  @apply border-[var(--color-primary)] bg-[var(--color-card)];
+}
+.popular-place {
+  @apply flex items-center gap-[var(--space-md)] min-w-0 w-full p-[var(--space-md)] pb-0 border-0 rounded-[var(--radius-md)] bg-transparent text-left;
+}
+.popular-rank {
+  @apply flex items-center justify-center shrink-0 size-[var(--space-xxl)] rounded-[var(--radius-full)] bg-[var(--color-primary)] text-[color:var(--color-on-primary)] text-[length:var(--font-small)] font-bold;
+}
+.popular-place-text {
+  @apply min-w-0;
+}
+.popular-place-text strong,
+.popular-place-text small {
+  @apply block overflow-hidden text-ellipsis whitespace-nowrap;
+}
+.popular-place-text strong {
+  @apply text-[color:var(--color-ink)];
+}
+.popular-place-text small {
+  @apply mt-[var(--space-xxs)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.popular-savers {
+  @apply flex flex-wrap items-center gap-[var(--space-sm)] px-[var(--space-md)] text-[length:var(--font-small)] text-[color:var(--color-muted)];
+}
+.popular-avatars {
+  @apply flex;
+}
+.popular-avatars a {
+  @apply flex rounded-[var(--radius-full)] no-underline;
+}
+.popular-avatars a + a {
+  @apply -ml-[var(--space-sm)];
+}
+.popular-avatars .user-avatar {
+  @apply size-[var(--space-xxl)] border-[length:var(--border-width)] border-solid border-[var(--color-canvas)] text-[length:var(--font-caption)];
+}
+.popular-mine {
+  @apply inline-flex items-center py-[var(--space-xxs)] px-[var(--space-sm)] rounded-[var(--radius-full)] bg-[var(--color-secondary)] text-[length:var(--font-caption)] font-bold;
+}
+@media (max-width: 767px) {
+  .popular-list {
+    @apply grid-cols-1;
+  }
+}

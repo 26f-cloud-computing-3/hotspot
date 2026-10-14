@@ -89,11 +89,13 @@ export const HomePage = () => {
             ? "다른 사람에게 보이는 내 모습이에요."
             : page === "places"
               ? "나만의 핫스팟을 찾아보세요."
-              : page === "collections"
-                ? "좋아하는 장소를 테마별로 모아 보세요."
-                : page === "followers"
-                  ? "친구를 찾아 팔로우해 보세요."
-                  : "좋아하는 장소로 이어지는 공간"}
+              : page === "popular"
+                ? "팔로우한 친구들이 많이 담은 장소예요."
+                : page === "collections"
+                  ? "좋아하는 장소를 테마별로 모아 보세요."
+                  : page === "followers"
+                    ? "친구를 찾아 팔로우해 보세요."
+                    : "좋아하는 장소로 이어지는 공간"}
         </p>
       </div>
       {notice && (

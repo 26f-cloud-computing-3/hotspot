@@ -2,6 +2,7 @@ import type { IconName } from "../Icon";
 
 export const NAVIGATION_ITEMS = [
   { id: "places", label: "장소 찾기", icon: "search" },
+  { id: "popular", label: "인기", icon: "flame" },
   { id: "collections", label: "컬렉션", icon: "collection" },
   { id: "feed", label: "피드", icon: "feed" },
   { id: "followers", label: "팔로워", icon: "people" },
