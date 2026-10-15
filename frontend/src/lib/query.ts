@@ -23,6 +23,7 @@ export const queryKeys = {
   mapConfig: ["map", "config"] as const,
   feed: ["feed"] as const,
   popularPlaces: ["places", "popular"] as const,
+  popularSearches: ["searches", "popular"] as const,
   collections: {
     all: ["collections"] as const,
     mine: ["collections", "mine"] as const,
