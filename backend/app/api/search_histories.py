@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, StringConstraints
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,8 @@ router = APIRouter(prefix="/api/search-histories", tags=["search-histories"])
 HISTORY_LIMIT = 10
 # How far back popular searches count, and so how long a hidden query is kept.
 POPULAR_WINDOW = timedelta(days=1)
+# How many popular searches are listed.
+POPULAR_LIMIT = 10
 
 # Same bounds as the `query` parameter of GET /api/map/search.
 SearchQuery = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
@@ -32,6 +34,12 @@ class SearchHistoryOut(BaseModel):
     id: uuid.UUID
     query: str
     searched_at: datetime
+
+
+class PopularSearch(BaseModel):
+    query: str
+    # Users who searched it in the last POPULAR_WINDOW; one user counts once.
+    searcher_count: int
 
 
 def _recent(db: Session, user: User) -> list[SearchHistory]:
@@ -64,6 +72,29 @@ def list_search_histories(
 ) -> list[SearchHistoryOut]:
     """The signed-in user's recent search queries, most recently searched first."""
     return _out(_recent(db, user))
+
+
+@router.get("/popular")
+def list_popular_searches(
+    _user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> list[PopularSearch]:
+    """The queries the most users searched in the last POPULAR_WINDOW, at most POPULAR_LIMIT.
+
+    Every user's queries count, hidden ones included. There is one row per user and query,
+    so a user who searches the same query again still counts once. Ties go to the query
+    searched most recently.
+    """
+    searcher_count = func.count().label("searcher_count")
+    last_searched_at = func.max(SearchHistory.searched_at).label("last_searched_at")
+    rows = db.execute(
+        select(SearchHistory.query, searcher_count)
+        .where(SearchHistory.searched_at >= datetime.now(UTC) - POPULAR_WINDOW)
+        .group_by(SearchHistory.query)
+        .order_by(searcher_count.desc(), last_searched_at.desc(), SearchHistory.query)
+        .limit(POPULAR_LIMIT)
+    )
+    return [PopularSearch(query=row.query, searcher_count=row.searcher_count) for row in rows]
 
 
 @router.post("")

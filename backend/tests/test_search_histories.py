@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.api.search_histories import HISTORY_LIMIT, POPULAR_WINDOW
+from app.api.search_histories import HISTORY_LIMIT, POPULAR_LIMIT, POPULAR_WINDOW
 from app.core.auth import CurrentUser, get_current_user
 from app.core.config import Settings, get_settings
 from app.core.db import get_engine
@@ -203,3 +203,78 @@ def test_clear_only_removes_own_histories(client):
     assert client.delete(URL).status_code == 204
     _sign_in(ALICE)
     assert _queries(_list(client)) == ["성수 카페"]
+
+
+POPULAR_URL = f"{URL}/popular"
+CAROL = str(uuid.uuid4())
+
+
+def _popular(client):
+    res = client.get(POPULAR_URL)
+    assert res.status_code == 200
+    return [(item["query"], item["searcher_count"]) for item in res.json()]
+
+
+def _search_as(client, user_id, *queries):
+    _sign_in(user_id)
+    for query in queries:
+        _record(client, query)
+
+
+def test_popular_requires_auth(client):
+    app.dependency_overrides.pop(get_current_user)
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        supabase_url="https://example.supabase.co"
+    )
+    assert client.get(POPULAR_URL).status_code == 401
+
+
+def test_popular_starts_empty(client):
+    assert _popular(client) == []
+
+
+def test_popular_ranks_by_how_many_users_searched(client):
+    _search_as(client, ALICE, "성수 카페", "대전 빵집")
+    _search_as(client, BOB, "성수 카페", "부산 국밥")
+    _search_as(client, CAROL, "성수 카페", "대전 빵집")
+    # Searching again does not count twice.
+    _search_as(client, BOB, "부산 국밥", "부산 국밥")
+    assert _popular(client) == [("성수 카페", 3), ("대전 빵집", 2), ("부산 국밥", 1)]
+
+
+def test_popular_ties_go_to_the_most_recent_search(client):
+    _search_as(client, ALICE, "성수 카페", "대전 빵집")
+    _search_as(client, BOB, "부산 국밥")
+    assert _popular(client) == [("부산 국밥", 1), ("대전 빵집", 1), ("성수 카페", 1)]
+
+
+def test_popular_counts_hidden_queries(client):
+    _fill_and_hide_oldest(client)
+    _search_as(client, BOB, "검색어 0")
+    assert _popular(client)[0] == ("검색어 0", 2)
+
+
+def test_popular_leaves_out_queries_deleted_by_the_user(client):
+    target = _record(client, "성수 카페")[0]
+    _search_as(client, BOB, "성수 카페")
+    _sign_in(ALICE)
+    assert client.delete(f"{URL}/{target['id']}").status_code == 204
+    assert _popular(client) == [("성수 카페", 1)]
+
+
+def test_popular_only_counts_the_last_window(client, engine):
+    _search_as(client, ALICE, "성수 카페", "대전 빵집")
+    _search_as(client, BOB, "성수 카페")
+    with Session(engine) as db:
+        db.execute(
+            update(SearchHistory)
+            .where(SearchHistory.query == "성수 카페", SearchHistory.user_id == uuid.UUID(BOB))
+            .values(searched_at=datetime.now(UTC) - POPULAR_WINDOW - timedelta(minutes=1))
+        )
+        db.commit()
+    assert _popular(client) == [("대전 빵집", 1), ("성수 카페", 1)]
+
+
+def test_popular_lists_at_most_the_limit(client):
+    _search_as(client, ALICE, *(f"검색어 {i}" for i in range(POPULAR_LIMIT + 2)))
+    assert len(_popular(client)) == POPULAR_LIMIT
