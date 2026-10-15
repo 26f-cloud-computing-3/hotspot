@@ -18,4 +18,7 @@ class SearchHistory(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, index=True)
     query: Mapped[str]
     # When the query was last searched; set by the API on every record.
-    searched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    searched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    # When the query was pushed out of the user's recent searches; null while it is shown.
+    # Hidden rows still count toward popular searches until they age out.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

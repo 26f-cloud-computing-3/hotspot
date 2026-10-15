@@ -1,11 +1,12 @@
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.api.search_histories import HISTORY_LIMIT
+from app.api.search_histories import HISTORY_LIMIT, POPULAR_WINDOW
 from app.core.auth import CurrentUser, get_current_user
 from app.core.config import Settings, get_settings
 from app.core.db import get_engine
@@ -94,8 +95,63 @@ def test_oldest_query_is_evicted_beyond_the_limit(client, engine):
     assert _queries(body)[:2] == ["새 검색어", "검색어 0"]
     assert "검색어 1" not in _queries(body)
     assert _list(client) == body
+    # The evicted query is hidden, not deleted, so that popular searches still count it.
     with Session(engine) as db:
-        assert len(db.scalars(select(SearchHistory)).all()) == HISTORY_LIMIT
+        rows = db.scalars(select(SearchHistory)).all()
+        assert len(rows) == HISTORY_LIMIT + 1
+        assert [row.query for row in rows if row.deleted_at is not None] == ["검색어 1"]
+
+
+def _fill_and_hide_oldest(client):
+    """Record HISTORY_LIMIT + 1 queries so that the first, "검색어 0", is hidden."""
+    for i in range(HISTORY_LIMIT + 1):
+        _record(client, f"검색어 {i}")
+    assert "검색어 0" not in _queries(_list(client))
+
+
+def test_hidden_query_comes_back_when_searched_again(client, engine):
+    _fill_and_hide_oldest(client)
+    body = _record(client, "검색어 0")
+    assert len(body) == HISTORY_LIMIT
+    assert _queries(body)[0] == "검색어 0"
+    assert "검색어 1" not in _queries(body)
+    with Session(engine) as db:
+        # Brought back in place rather than added again; "검색어 1" took its place as hidden.
+        assert len(db.scalars(select(SearchHistory)).all()) == HISTORY_LIMIT + 1
+        hidden = db.scalars(select(SearchHistory).where(SearchHistory.deleted_at.is_not(None)))
+        assert [row.query for row in hidden] == ["검색어 1"]
+
+
+def test_hidden_query_is_purged_once_old(client, engine):
+    _fill_and_hide_oldest(client)
+    with Session(engine) as db:
+        db.execute(
+            update(SearchHistory)
+            .where(SearchHistory.query == "검색어 0")
+            .values(searched_at=datetime.now(UTC) - POPULAR_WINDOW - timedelta(minutes=1))
+        )
+        db.commit()
+    _sign_in(BOB)
+    # Any user's next search cleans it up.
+    _record(client, "대전 빵집")
+    with Session(engine) as db:
+        queries = db.scalars(select(SearchHistory.query)).all()
+        assert "검색어 0" not in queries
+        assert len(queries) == HISTORY_LIMIT + 1
+
+
+def test_hidden_query_cannot_be_deleted_by_id(client, engine):
+    _fill_and_hide_oldest(client)
+    with Session(engine) as db:
+        hidden = db.scalar(select(SearchHistory).where(SearchHistory.query == "검색어 0"))
+    assert client.delete(f"{URL}/{hidden.id}").status_code == 404
+
+
+def test_clear_also_deletes_hidden_queries(client, engine):
+    _fill_and_hide_oldest(client)
+    assert client.delete(URL).status_code == 204
+    with Session(engine) as db:
+        assert db.scalars(select(SearchHistory)).all() == []
 
 
 @pytest.mark.parametrize("query", ["", "   ", "가" * 101])
