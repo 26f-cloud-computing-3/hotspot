@@ -25,3 +25,14 @@ export const deleteSearchHistory = (id: string): Promise<void> => {
 export const clearSearchHistories = (): Promise<void> => {
   return apiDelete<void>("/api/search-histories");
 };
+
+export interface PopularSearch {
+  query: string;
+  /** Users who searched it in the last day; one user counts once. */
+  searcher_count: number;
+}
+
+/** The queries the most users searched in the last day, at most ten. */
+export const listPopularSearches = (): Promise<PopularSearch[]> => {
+  return apiGet<PopularSearch[]>("/api/search-histories/popular");
+};

@@ -11,6 +11,7 @@ import { Icon } from "../../components/Icon";
 import { apiGet } from "../../lib/api";
 import { SavePlaceDialog } from "../collections/SavePlaceDialog";
 import { MapView } from "./MapView";
+import { PopularSearches } from "./PopularSearches";
 import {
   clearSearchHistories,
   deleteSearchHistory,
@@ -126,12 +127,16 @@ export const PlaceSearch = () => {
     search(query);
   };
 
+  const searchFor = (text: string) => {
+    setQuery(text);
+    search(text);
+  };
+
   const searchAgain = (history: SearchHistory) => {
     // The list is done with; let go of the input so a touch keyboard gets out of
     // the way of the results.
     inputRef.current?.blur();
-    setQuery(history.query);
-    search(history.query);
+    searchFor(history.query);
   };
 
   const removeHistory = (history: SearchHistory) => {
@@ -237,6 +242,8 @@ export const PlaceSearch = () => {
           </section>
         )}
       </div>
+
+      <PopularSearches onSearch={searchFor} />
 
       {error && (
         <p className="search-message search-error" role="alert">
