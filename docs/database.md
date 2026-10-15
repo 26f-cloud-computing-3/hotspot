@@ -103,7 +103,7 @@
 
 ## 최근 검색어
 
-`public.search_history`(`id`, `user_id`, `query`, `searched_at`)는 유저가 장소 찾기에서 검색한 검색어다. `(user_id, query)`가 유일해서 같은 검색어는 한 행만 있고, 다시 검색하면 `searched_at`만 갱신된다. SQL: `backend/supabase/migrations/0009_search_history_table.sql`.
+`public.search_history`(`id`, `user_id`, `query`, `searched_at`, `deleted_at`)는 유저가 장소 찾기에서 검색한 검색어다. `(user_id, query)`가 유일해서 같은 검색어는 한 행만 있고, 다시 검색하면 `searched_at`만 갱신된다. 인기 검색어도 이 테이블에서 집계한다. SQL: `backend/supabase/migrations/0009_search_history_table.sql`, `0010_search_history_soft_delete.sql`.
 
 모두 `Authorization: Bearer <access_token>` 필요.
 
@@ -111,14 +111,28 @@
 |--------|------|------|
 | GET | `/api/search-histories` | 내 최근 검색어 (최근 검색순, 최대 10개) |
 | POST | `/api/search-histories` | 검색어 기록. `{ "query": "성수 카페" }` — 앞뒤 공백 제거 후 1~100자(`GET /api/map/search`의 `query`와 같은 범위). 갱신된 목록을 그대로 돌려준다 |
-| DELETE | `/api/search-histories/{id}` | 검색어 하나 삭제. 204. 다른 유저의 것이거나 없는 id면 404 |
-| DELETE | `/api/search-histories` | 내 검색어 전체 삭제. 204 |
+| GET | `/api/search-histories/popular` | 인기 검색어 (아래 참고) |
+| DELETE | `/api/search-histories/{id}` | 검색어 하나 삭제. 204. 다른 유저의 것이거나, 숨겨졌거나, 없는 id면 404 |
+| DELETE | `/api/search-histories` | 내 검색어 전체 삭제(숨겨진 것 포함). 204 |
 
 응답 항목: `id`, `query`, `searched_at`.
 
-- 유저당 최대 10개만 보관한다. 기록할 때 10개를 넘으면 같은 트랜잭션에서 가장 오래전에 검색한 것부터 지운다.
+- 유저에게는 최대 10개만 보여 준다. 기록할 때 10개를 넘으면 같은 트랜잭션에서 가장 오래전에 검색한 것부터 **숨긴다**(`deleted_at` 설정, soft delete). 숨긴 검색어는 목록에 나오지 않지만 인기 검색어에는 계속 집계되고, 다시 검색하면 같은 행이 되살아난다(`deleted_at = null`).
+- 유저가 직접 지운 검색어(개별 · 전체 삭제)는 실제로 지운다(hard delete). 인기 검색어에서도 빠진다.
+- 숨긴 행 중 `searched_at`이 24시간보다 오래된 것은 더는 집계에 쓰이지 않으므로, 누가 검색어를 기록할 때마다 모든 유저의 것을 함께 지운다.
 - 기록은 장소 검색 API가 아니라 프론트엔드가 한다: 검색이 성공하고 결과가 1곳 이상일 때만 `POST`를 호출한다. 결과가 없는 검색어(대개 오타)와 실패한 검색은 남기지 않는다.
 - 최근 검색어 API가 실패해도 장소 검색은 그대로 동작한다 (프론트엔드가 오류를 무시한다).
+
+### 인기 검색어
+
+`GET /api/search-histories/popular` — 최근 24시간 동안 모든 유저가 검색한 검색어를, 검색한 사람이 많은 순으로 최대 10개 돌려준다. 결정 근거는 이슈 #65.
+
+응답 항목: `query`, `searcher_count`.
+
+- 대상은 `searched_at`이 최근 24시간 안인 모든 행이다. 숨긴 행도 센다. `searched_at`은 마지막으로 검색한 시각이므로, "24시간 안에 검색했다"와 "마지막 검색이 24시간 안이다"는 같은 뜻이다.
+- `searcher_count`는 검색한 **사람 수**다. `(user_id, query)`당 한 행이므로 한 유저가 같은 검색어를 여러 번 검색해도 1명이다.
+- 정렬: `searcher_count` 내림차순 → 가장 최근에 검색된 순 → 검색어. 결과가 없으면 빈 배열이다.
+- 검색어는 기록할 때 앞뒤 공백만 제거한 그대로 묶는다. 부적절한 검색어는 판단할 기준이 없어 거르지 않는다.
 
 ## 피드
 
