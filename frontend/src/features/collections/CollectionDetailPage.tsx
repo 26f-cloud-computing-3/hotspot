@@ -15,6 +15,7 @@ import {
   listCollectionPlaces,
   removePlaceFromCollection,
 } from "./api";
+import { CollectionCategoryStats } from "./CollectionCategoryStats";
 import { SavePlaceDialog } from "./SavePlaceDialog";
 import "./CollectionsPage.css";
 import "./CollectionDetailPage.css";
@@ -198,6 +199,9 @@ export const CollectionDetailPage = () => {
               onPlaceSave={collection.is_owner ? undefined : setSavingPlace}
             />
           </section>
+          {collection.is_owner && (
+            <CollectionCategoryStats collectionId={collection.id} />
+          )}
           <ol className="saved-place-list">
             {places.map((place) => (
               <li

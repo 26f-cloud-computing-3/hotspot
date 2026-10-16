@@ -18,6 +18,17 @@
 2. Supabase 대시보드 → Connect → Connection string에서 URI 복사 (Render처럼 IPv4만 되는 환경은 Session/Transaction pooler 주소 사용)
 3. `backend/.env`와 배포 환경(Render)에 `DATABASE_URL` 설정. DB 비밀번호가 포함된 시크릿이므로 커밋 금지.
 
+## 컬렉션 카테고리 계층 통계 API
+
+`GET /api/collections/{id}/category-stats`는 내 컬렉션에 저장된 장소의 카카오 카테고리 경로를 계층별로 집계한다.
+
+- 수집: 이미 저장 중인 `category` 문자열을 사용 (`음식점 > 한식 > 해장국` 등)
+- 정제: ` > `로 경로를 나누고 각 단계의 앞뒤 공백을 제거. 경로가 비었거나 카카오가 아닌 장소는 제외
+- 분석: 부모부터 자식까지 각 노드의 장소 수를 누적하고 같은 단계에서는 개수 내림차순으로 정렬
+- 저장: 별도 통계 테이블 없이 요청할 때마다 컬렉션 장소를 집계
+
+응답 항목은 `total`, `categories`다. 각 카테고리 노드는 `name`, `count`, 재귀적인 `children`을 가진다. 소유자가 아닌 컬렉션은 404다.
+
 ## 내 프로필 API
 
 모두 `Authorization: Bearer <access_token>` 필요. 코드: `backend/app/api/me.py`.
@@ -46,6 +57,7 @@
 | GET | `/api/collections/{id}/places` | 컬렉션에 담긴 장소 목록 (최근에 담은 순). 조회 범위는 위와 같다 |
 | POST | `/api/collections/{id}/places` | 장소 담기. 본문은 장소 검색 결과(`GET /api/map/search`의 `places` 항목) 그대로. 새로 담으면 201, 이미 담긴 장소면 200이고 아무것도 바뀌지 않는다 |
 | DELETE | `/api/collections/{id}/places/{provider}/{place_id}` | 장소 제외. 204. 담겨 있지 않은 장소여도 204 |
+| GET | `/api/collections/{id}/category-stats` | 내 컬렉션의 카테고리 계층별 장소 수 |
 
 없는 id와 다른 유저의 비공개 컬렉션은 모두 404다. 다른 유저의 공개 컬렉션은 위 두 조회만 되고, 수정 · 삭제 · 장소 담기 · 제외는 404다(조회는 `_get_visible_collection`, 변경은 `_get_own_collection`으로 나뉜다). 팔로우 여부는 조회 권한과 무관하다.
 
@@ -59,7 +71,7 @@
 
 - 지도 provider에는 id로 장소를 다시 조회하는 API가 없어서, 백엔드는 클라이언트가 보낸 장소 정보를 검증할 수 없다. 장소 행을 유저끼리 공유하면 한 유저가 보낸 값이 다른 유저의 컬렉션에 보이게 되므로 컬렉션마다 따로 저장한다. 입력은 길이 · 좌표 범위만 제한하고, `url`은 링크로 렌더링되므로 `http(s)://`로 시작하는 값만 받는다.
 - 같은 장소인지는 `(provider, provider_place_id)`로 판단한다. `(collection_id, provider, provider_place_id)`가 유일하므로 한 컬렉션에 같은 장소가 두 번 담기지 않고, 한 장소를 여러 컬렉션에 담을 수는 있다.
-- 스냅샷은 담을 때 한 번 저장하고 갱신하지 않는다.
+- 스냅샷은 담을 때 한 번 저장하고 갱신하지 않는다. 카테고리 계층 통계도 이 스냅샷의 `category`를 사용한다.
 - 컬렉션당 장소 수 상한은 없다.
 
 ## 컬렉션 히스토리 (피드용)
