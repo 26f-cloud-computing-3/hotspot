@@ -7,6 +7,8 @@ import {
   type FollowUser,
   listFollowers,
   listFollowing,
+  listRecommendedUsers,
+  type RecommendedUser,
   searchUsers,
   USER_QUERY_MAX_LENGTH,
 } from "./api";
@@ -17,6 +19,20 @@ import "./FollowersPage.css";
 const SEARCH_DELAY_MS = 300;
 
 type Tab = "followers" | "following";
+
+/** Why a suggestion is shown. Mutual friends are only ever counted, never named. */
+const recommendationReason = ({
+  reason,
+  mutual_count,
+  follows_you,
+}: RecommendedUser): string => {
+  if (reason === "popular") return "공개 컬렉션을 많이 모았어요";
+  const parts = [
+    ...(mutual_count > 0 ? [`함께 아는 친구 ${mutual_count}명`] : []),
+    ...(follows_you ? ["회원님을 팔로우합니다"] : []),
+  ];
+  return parts.join(" · ");
+};
 
 /** `value`, once it has stopped changing for `delayMs`. */
 const useDebounced = <T,>(value: T, delayMs: number): T => {
@@ -54,8 +70,17 @@ export const FollowersPage = () => {
   const searched = term === searchTerm;
   const results = searched ? searchQuery.data : undefined;
   const searchFailed = searched && loadFailed(searchQuery);
+  // Extra to the lists below: if it cannot be loaded, the section is simply left out.
+  const recommendationsQuery = useQuery({
+    queryKey: queryKeys.users.recommendations,
+    queryFn: listRecommendedUsers,
+  });
+  const recommendations = recommendationsQuery.data;
 
-  const userList = (users: FollowUser[]) => {
+  const userList = <T extends FollowUser>(
+    users: T[],
+    describe?: (user: T) => string,
+  ) => {
     return (
       <ul className="user-list">
         {users.map((user) => (
@@ -65,6 +90,9 @@ export const FollowersPage = () => {
               <span className="user-identity">
                 <strong>{user.name}</strong>
                 <small>@{user.handle}</small>
+                {describe && (
+                  <small className="user-reason">{describe(user)}</small>
+                )}
               </span>
             </Link>
             <button
@@ -138,6 +166,15 @@ export const FollowersPage = () => {
     ] as const;
     content = (
       <>
+        {recommendations && recommendations.length > 0 && (
+          <section
+            className="recommendations"
+            aria-labelledby="recommendations-title"
+          >
+            <h2 id="recommendations-title">알 수도 있는 사람</h2>
+            {userList(recommendations, recommendationReason)}
+          </section>
+        )}
         <div className="follow-tabs">
           {tabs.map((item) => (
             <button

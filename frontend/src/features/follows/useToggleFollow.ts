@@ -1,9 +1,19 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { queryKeys } from "../../lib/query";
-import { type FollowUser, follow, type UserProfile, unfollow } from "./api";
+import {
+  type FollowUser,
+  follow,
+  type RecommendedUser,
+  type UserProfile,
+  unfollow,
+} from "./api";
 
-const withFollowing = (users: FollowUser[], id: string, value: boolean) => {
+const withFollowing = <T extends FollowUser>(
+  users: T[],
+  id: string,
+  value: boolean,
+): T[] => {
   return users.map((user) =>
     user.id === id ? { ...user, is_following: value } : user,
   );
@@ -30,6 +40,11 @@ export const useToggleFollow = () => {
     );
     queryClient.setQueryData<FollowUser[]>(
       queryKeys.follows.followers,
+      (users) => users && withFollowing(users, user.id, value),
+    );
+    // A followed suggestion stays until the next load, so the follow can be undone in place.
+    queryClient.setQueryData<RecommendedUser[]>(
+      queryKeys.users.recommendations,
       (users) => users && withFollowing(users, user.id, value),
     );
     // An unfollowed user stays in the list until the next load so it can be undone.

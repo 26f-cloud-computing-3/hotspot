@@ -40,6 +40,7 @@ export const queryKeys = {
     collections: (id: string) => ["users", "collections", id] as const,
     searches: ["users", "search"] as const,
     search: (term: string) => ["users", "search", term] as const,
+    recommendations: ["users", "recommendations"] as const,
   },
   follows: {
     followers: ["follows", "followers"] as const,
