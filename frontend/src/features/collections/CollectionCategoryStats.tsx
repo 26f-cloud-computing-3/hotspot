@@ -1,6 +1,39 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Icon } from "../../components/Icon";
 import { queryKeys } from "../../lib/query";
 import { type CollectionCategoryNode, getCollectionCategoryStats } from "./api";
+
+const CategoryTreeNode = ({ node }: { node: CollectionCategoryNode }) => {
+  const hasChildren = node.children.length > 0;
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <li>
+      {hasChildren ? (
+        <button
+          type="button"
+          className="category-tree-toggle"
+          aria-expanded={expanded}
+          aria-label={`${node.name} 하위 카테고리 ${expanded ? "접기" : "펼치기"}`}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <span className="category-tree-name">
+            <Icon name="chevron" />
+            <strong>{node.name}</strong>
+          </span>
+          <span>{node.count.toLocaleString()}곳</span>
+        </button>
+      ) : (
+        <div className="category-tree-row">
+          <strong>{node.name}</strong>
+          <span>{node.count.toLocaleString()}곳</span>
+        </div>
+      )}
+      {hasChildren && expanded && <CategoryTree nodes={node.children} />}
+    </li>
+  );
+};
 
 const CategoryTree = ({
   nodes,
@@ -11,13 +44,7 @@ const CategoryTree = ({
 }) => (
   <ul className={root ? "category-tree-root" : undefined}>
     {nodes.map((node) => (
-      <li key={node.name}>
-        <div>
-          <strong>{node.name}</strong>
-          <span>{node.count.toLocaleString()}곳</span>
-        </div>
-        {node.children.length > 0 && <CategoryTree nodes={node.children} />}
-      </li>
+      <CategoryTreeNode key={node.name} node={node} />
     ))}
   </ul>
 );

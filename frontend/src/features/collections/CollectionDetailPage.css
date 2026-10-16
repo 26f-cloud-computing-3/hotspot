@@ -43,10 +43,25 @@
 .category-tree-root > li {
   @apply p-[var(--space-md)] rounded-[var(--radius-md)] bg-[var(--color-card)];
 }
-.collection-category-stats li > div {
+.category-tree-row,
+.category-tree-toggle {
   @apply flex items-center justify-between gap-[var(--space-sm)];
 }
-.collection-category-stats li span {
+.category-tree-toggle {
+  @apply w-full p-0 border-0 bg-transparent text-left text-[color:var(--color-ink)] cursor-pointer;
+}
+.category-tree-name {
+  @apply flex items-center gap-[var(--space-xs)] min-w-0;
+}
+.category-tree-toggle .icon {
+  @apply shrink-0 transition-transform;
+  transform: rotate(-90deg);
+}
+.category-tree-toggle[aria-expanded="true"] .icon {
+  transform: rotate(0deg);
+}
+.category-tree-toggle > span:last-child,
+.category-tree-row > span {
   @apply font-bold text-[color:var(--color-primary)];
 }
 .collection-category-stats li ul {
