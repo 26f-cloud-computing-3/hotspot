@@ -263,3 +263,85 @@ def test_own_profile_leaves_out_private_collections_too(client):
     assert client.get(f"/api/users/{BOB}").json()["public_collection_count"] == 1
     res = client.get(f"/api/users/{BOB}/collections")
     assert [(c["name"], c["is_owner"]) for c in res.json()] == [("Cafes", True)]
+
+
+def _recommended(res):
+    assert res.status_code == 200
+    return [
+        (user["handle"], user["reason"], user["mutual_count"], user["follows_you"])
+        for user in res.json()
+    ]
+
+
+def test_recommendations_require_auth(client):
+    app.dependency_overrides.pop(get_current_user)
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        supabase_url="https://example.supabase.co"
+    )
+    assert client.get("/api/users/recommendations").status_code == 401
+
+
+def test_recommendations_start_empty(client):
+    # Nobody follows anybody and there are no public collections yet.
+    _sign_in(ALICE)
+    assert _recommended(client.get("/api/users/recommendations")) == []
+
+
+def test_recommends_people_followed_by_people_i_follow(client, extra_profiles):
+    dave = _join(client, "dave@example.com", "Dave Kim")
+    _sign_in(BOB)
+    client.put(f"/api/follows/{CAROL}")
+    client.put(f"/api/follows/{dave}")
+    _sign_in(CAROL)
+    client.put(f"/api/follows/{dave}")
+    _sign_in(ALICE)
+    client.put(f"/api/follows/{BOB}")
+    client.put(f"/api/follows/{CAROL}")
+    # Bob and Carol, whom Alice follows, both follow Dave; Bob is already followed.
+    assert _recommended(client.get("/api/users/recommendations")) == [("dave", "mutual", 2, False)]
+
+
+def test_recommends_followers_not_followed_back(client):
+    _sign_in(BOB)
+    client.put(f"/api/follows/{ALICE}")
+    _sign_in(ALICE)
+    assert _recommended(client.get("/api/users/recommendations")) == [
+        ("bob", "follows_you", 0, True)
+    ]
+    client.put(f"/api/follows/{BOB}")
+    assert _recommended(client.get("/api/users/recommendations")) == []
+
+
+def test_fills_in_with_users_who_share_public_collections(client):
+    _sign_in(BOB)
+    _collection(client, "Cafes", True)
+    _sign_in(CAROL)
+    _collection(client, "Bars", True)
+    _collection(client, "Bakeries", True)
+    _collection(client, "Secret", False)
+    _sign_in(ALICE)
+    # Carol has more public collections; private ones count for nothing.
+    assert _recommended(client.get("/api/users/recommendations")) == [
+        ("carol_99", "popular", 0, False),
+        ("bob", "popular", 0, False),
+    ]
+
+
+def test_recommendations_put_closer_people_first(client, extra_profiles):
+    dave = _join(client, "dave@example.com", "Dave Kim")
+    erin = _join(client, "erin@example.com", "Erin Choi")
+    _sign_in(dave)
+    _collection(client, "Lots", True)
+    _sign_in(BOB)
+    client.put(f"/api/follows/{erin}")
+    _sign_in(CAROL)
+    client.put(f"/api/follows/{ALICE}")
+    _sign_in(ALICE)
+    client.put(f"/api/follows/{BOB}")
+    assert _recommended(client.get("/api/users/recommendations")) == [
+        ("erin", "mutual", 1, False),
+        ("carol_99", "follows_you", 0, True),
+        ("dave", "popular", 0, False),
+    ]
+    assert len(client.get("/api/users/recommendations?limit=1").json()) == 1
+    assert client.get("/api/users/recommendations?limit=0").status_code == 422

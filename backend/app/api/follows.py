@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
@@ -17,6 +17,8 @@ from app.models.user import User
 router = APIRouter(prefix="/api", tags=["follows"])
 
 SEARCH_LIMIT = 20
+RECOMMENDATION_LIMIT = 10
+RECOMMENDATION_MAX_LIMIT = 20
 
 
 class UserOut(BaseModel):
@@ -32,6 +34,17 @@ class UserProfileOut(UserOut):
     # Whether this is the signed-in user's own profile.
     is_me: bool
     public_collection_count: int
+
+
+class RecommendedUserOut(UserOut):
+    # Why this user is suggested: followed by people I follow, following me, or
+    # (when there is nothing closer) simply sharing many public collections.
+    reason: Literal["mutual", "follows_you", "popular"]
+    # How many of the people I follow follow this user. Only the count goes out:
+    # who they are would reveal other users' follow lists.
+    mutual_count: int
+    # Whether this user follows me.
+    follows_you: bool
 
 
 def _followed_by(user: User) -> ColumnElement[bool]:
@@ -114,6 +127,59 @@ def search_users(
         )
         .limit(SEARCH_LIMIT),
     )
+
+
+# Declared before /users/{user_id} so "recommendations" is not read as a user id.
+@router.get("/users/recommendations")
+def recommend_users(
+    limit: Annotated[int, Query(ge=1, le=RECOMMENDATION_MAX_LIMIT)] = RECOMMENDATION_LIMIT,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> list[RecommendedUserOut]:
+    """People the signed-in user may know, closest first.
+
+    First people followed by the people the user follows (more of them, higher), then people
+    who follow the user without being followed back, then, to fill the list for someone new,
+    people with the most public collections. The user and people they already follow are
+    left out.
+    """
+    mutual = _mutual_count(user)
+    follows_you = exists().where(Follow.follower_id == User.id, Follow.followee_id == user.id)
+    public_collections = (
+        select(func.count())
+        .select_from(Collection)
+        .where(Collection.owner_id == User.id, Collection.is_public)
+        .scalar_subquery()
+    )
+    rows = db.execute(
+        select(User, mutual, follows_you)
+        .where(
+            User.id != user.id,
+            ~_followed_by(user),
+            or_(mutual > 0, follows_you, public_collections > 0),
+        )
+        .order_by(
+            case((mutual > 0, 0), (follows_you, 1), else_=2),
+            mutual.desc(),
+            public_collections.desc(),
+            User.name,
+            User.handle,
+        )
+        .limit(limit)
+    )
+    return [
+        RecommendedUserOut(
+            id=row.id,
+            name=row.name,
+            handle=row.handle,
+            avatar_url=row.avatar_url,
+            is_following=False,
+            reason="mutual" if mutual_count else "follows_you" if is_follower else "popular",
+            mutual_count=mutual_count,
+            follows_you=is_follower,
+        )
+        for row, mutual_count, is_follower in rows
+    ]
 
 
 @router.get("/users/{user_id}")
