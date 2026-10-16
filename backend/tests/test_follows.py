@@ -150,6 +150,63 @@ def test_search_needs_a_term(client):
     assert client.get("/api/users").status_code == 422
 
 
+def _join(client, email, name):
+    """Adds a user beyond Alice, Bob and Carol; the handle comes from the email."""
+    user_id = str(uuid.uuid4())
+    PROFILES[user_id] = {"email": email, "name": name}
+    _sign_in(user_id)
+    assert client.get("/api/me").status_code == 200
+    return user_id
+
+
+@pytest.fixture
+def extra_profiles():
+    yield
+    for user_id in [key for key in PROFILES if key not in (ALICE, BOB, CAROL)]:
+        del PROFILES[user_id]
+
+
+def test_search_ranks_exact_then_prefix_then_substring(client, extra_profiles):
+    # Handles run the other way round, so ordering by handle would reverse the result.
+    _join(client, "zz@example.com", "동우")
+    _join(client, "yy@example.com", "동우진")
+    _join(client, "aa@example.com", "가동우")
+    _sign_in(ALICE)
+    assert _handles(client.get("/api/users?q=동우")) == [
+        ("zz", False),
+        ("yy", False),
+        ("aa", False),
+    ]
+    # A couple of letters are enough to find someone whose name starts with them.
+    assert _handles(client.get("/api/users?q=동")) == [("zz", False), ("yy", False), ("aa", False)]
+
+
+def test_search_ranks_an_exact_handle_first(client, extra_profiles):
+    _join(client, "bobby@example.com", "Bobby Park")
+    _sign_in(ALICE)
+    # "bob" is Bob's whole handle and only the start of Bobby's.
+    assert _handles(client.get("/api/users?q=bob")) == [("bob", False), ("bobby", False)]
+
+
+def test_search_ranks_people_known_through_followed_users_first(client, extra_profiles):
+    dave = _join(client, "dave@example.com", "Dave Kim")
+    # Alice follows Bob, and Bob follows Dave: Dave is someone Alice may know.
+    _sign_in(BOB)
+    client.put(f"/api/follows/{dave}")
+    _sign_in(ALICE)
+    client.put(f"/api/follows/{BOB}")
+    # Carol and Dave both only contain "kim"; by name alone Carol would come first.
+    assert _handles(client.get("/api/users?q=kim")) == [("dave", False), ("carol_99", False)]
+
+
+def test_search_ranks_people_already_followed_before_strangers(client, extra_profiles):
+    _join(client, "dave@example.com", "Dave Kim")
+    _sign_in(ALICE)
+    dave = next(user["id"] for user in client.get("/api/users?q=dave").json())
+    client.put(f"/api/follows/{dave}")
+    assert _handles(client.get("/api/users?q=kim")) == [("dave", True), ("carol_99", False)]
+
+
 def _collection(client, name, is_public):
     res = client.post("/api/collections", json={"name": name, "is_public": is_public})
     return res.json()
