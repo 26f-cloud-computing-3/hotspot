@@ -3,9 +3,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import ColumnElement, Select, exists, func, select, true
+from sqlalchemy import ColumnElement, Select, case, exists, func, or_, select, true
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.api.collections import CollectionOut, list_public_collections
 from app.core.db import get_db
@@ -55,24 +55,63 @@ def _like_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _mutual_count(user: User) -> ColumnElement[int]:
+    """How many of the people `user` follows also follow the user in the outer query."""
+    mine = aliased(Follow)
+    return (
+        select(func.count())
+        .select_from(Follow)
+        .join(mine, mine.followee_id == Follow.follower_id)
+        .where(mine.follower_id == user.id, Follow.followee_id == User.id)
+        .scalar_subquery()
+    )
+
+
 @router.get("/users")
 def search_users(
     q: Annotated[str, Query(max_length=50)],
     user: User = Depends(get_registered_user),
     db: Session = Depends(get_db),
 ) -> list[UserOut]:
-    """Find other users by handle (prefix) or name (substring), case-insensitively."""
-    term = _like_escape(q.strip().removeprefix("@"))
+    """Find other users by handle (prefix) or name (substring), case-insensitively.
+
+    The best matches come first: an exact name or handle, then a name or handle that starts
+    with the term (so "홍" finds 홍동우), then a name that merely contains it. Within each of
+    those, people followed by more of the people the searcher follows come first, then people
+    the searcher already follows, then by name.
+    """
+    text = q.strip().removeprefix("@")
+    term = _like_escape(text)
     if not term:
         return []
+    needle = text.lower()
+    starts_with = f"{term}%"
+    match_rank = case(
+        (or_(func.lower(User.name) == needle, func.lower(User.handle) == needle), 0),
+        (
+            or_(
+                User.name.ilike(starts_with, escape="\\"),
+                User.handle.ilike(starts_with, escape="\\"),
+            ),
+            1,
+        ),
+        else_=2,
+    )
+    followed = _followed_by(user)
     return _users(
         db,
-        select(User, _followed_by(user))
+        select(User, followed)
         .where(
             User.id != user.id,
-            User.handle.ilike(f"{term}%", escape="\\") | User.name.ilike(f"%{term}%", escape="\\"),
+            User.handle.ilike(starts_with, escape="\\") | User.name.ilike(f"%{term}%", escape="\\"),
         )
-        .order_by(User.handle)
+        .order_by(
+            match_rank,
+            _mutual_count(user).desc(),
+            followed.desc(),
+            User.name,
+            User.handle,
+        )
         .limit(SEARCH_LIMIT),
     )
 
