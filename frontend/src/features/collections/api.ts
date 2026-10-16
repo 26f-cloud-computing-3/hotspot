@@ -31,6 +31,17 @@ export interface CollectionFields {
   is_public: boolean;
 }
 
+export interface CollectionCategoryNode {
+  name: string;
+  count: number;
+  children: CollectionCategoryNode[];
+}
+
+export interface CollectionCategoryStats {
+  total: number;
+  categories: CollectionCategoryNode[];
+}
+
 export const listMyCollections = (): Promise<Collection[]> => {
   return apiGet<Collection[]>("/api/collections");
 };
@@ -61,6 +72,11 @@ export const listCollectionPlaces = async (
   // Saved places have no search center to be measured from.
   return places.map((place) => ({ ...place, distance: null }));
 };
+
+export const getCollectionCategoryStats = (
+  collectionId: string,
+): Promise<CollectionCategoryStats> =>
+  apiGet(`/api/collections/${collectionId}/category-stats`);
 
 export const createCollection = (
   body: CollectionFields,

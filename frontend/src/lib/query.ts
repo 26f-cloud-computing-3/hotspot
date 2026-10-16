@@ -31,6 +31,8 @@ export const queryKeys = {
       ["collections", "mine", place.provider, place.id] as const,
     detail: (id: string) => ["collections", "detail", id] as const,
     places: (id: string) => ["collections", "places", id] as const,
+    categoryStats: (id: string) =>
+      ["collections", "category-stats", id] as const,
   },
   users: {
     all: ["users"] as const,

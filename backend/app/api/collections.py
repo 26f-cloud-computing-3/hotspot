@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -20,7 +21,6 @@ router = APIRouter(prefix="/api/collections", tags=["collections"])
 CollectionName = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)
 ]
-
 
 class CollectionCreate(BaseModel):
     name: CollectionName
@@ -80,7 +80,6 @@ class CollectionPlaceIn(BaseModel):
             raise ValueError("url must start with http:// or https://")
         return value
 
-
 class CollectionPlaceOut(BaseModel):
     """Same shape as a place search result, so the frontend can treat both alike."""
 
@@ -95,6 +94,23 @@ class CollectionPlaceOut(BaseModel):
     lat: float
     lng: float
     added_at: datetime
+
+
+class CollectionCategoryNode(BaseModel):
+    name: str
+    count: int
+    children: list[CollectionCategoryNode]
+
+
+class CollectionCategoryStats(BaseModel):
+    total: int
+    categories: list[CollectionCategoryNode]
+
+
+@dataclass
+class _CategoryBucket:
+    count: int = 0
+    children: dict[str, _CategoryBucket] = field(default_factory=dict)
 
 
 @router.get("")
@@ -268,6 +284,47 @@ def add_place(
     else:
         response.status_code = status.HTTP_200_OK
     return _place_out(place)
+
+
+@router.get("/{collection_id}/category-stats")
+def get_collection_category_stats(
+    collection_id: uuid.UUID,
+    user: User = Depends(get_registered_user),
+    db: Session = Depends(get_db),
+) -> CollectionCategoryStats:
+    """Count the saved places in an owned collection by Kakao category group."""
+    collection = _get_own_collection(db, user, collection_id)
+    categories = db.scalars(
+        select(CollectionPlace.category).where(
+            CollectionPlace.collection_id == collection.id,
+            CollectionPlace.provider == "kakao",
+            CollectionPlace.category.is_not(None),
+        )
+    )
+    tree: dict[str, _CategoryBucket] = {}
+    total = 0
+    for category in categories:
+        parts = [part.strip() for part in category.split(" > ") if part.strip()]
+        if not parts:
+            continue
+        total += 1
+        level = tree
+        for part in parts:
+            bucket = level.setdefault(part, _CategoryBucket())
+            bucket.count += 1
+            level = bucket.children
+    return CollectionCategoryStats(total=total, categories=_category_nodes(tree))
+
+
+def _category_nodes(tree: dict[str, _CategoryBucket]) -> list[CollectionCategoryNode]:
+    return [
+        CollectionCategoryNode(
+            name=name,
+            count=bucket.count,
+            children=_category_nodes(bucket.children),
+        )
+        for name, bucket in sorted(tree.items(), key=lambda item: (-item[1].count, item[0]))
+    ]
 
 
 @router.delete(
