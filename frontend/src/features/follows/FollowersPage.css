@@ -52,6 +52,15 @@
 .user-identity small {
   @apply text-[length:var(--font-small)] text-[color:var(--color-muted)];
 }
+.user-identity .user-reason {
+  @apply mt-[var(--space-xxs)] text-[length:var(--font-caption)];
+}
+.recommendations {
+  @apply mb-[var(--space-xl)];
+}
+.recommendations h2 {
+  @apply m-0 mb-[var(--space-md)] text-[length:var(--font-body)] font-bold text-[color:var(--color-ink)];
+}
 .user-link:hover strong {
   @apply underline;
 }

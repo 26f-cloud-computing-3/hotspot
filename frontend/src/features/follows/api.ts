@@ -35,6 +35,20 @@ export const searchUsers = (query: string): Promise<FollowUser[]> => {
   return apiGet<FollowUser[]>(`/api/users?q=${encodeURIComponent(query)}`);
 };
 
+export interface RecommendedUser extends FollowUser {
+  /** mutual: followed by people I follow · follows_you: follows me · popular: many public collections. */
+  reason: "mutual" | "follows_you" | "popular";
+  /** How many of the people I follow follow this user (a count only, never who). */
+  mutual_count: number;
+  /** Whether this user follows me. */
+  follows_you: boolean;
+}
+
+/** People I may know, closest first; people I already follow are left out. */
+export const listRecommendedUsers = (): Promise<RecommendedUser[]> => {
+  return apiGet<RecommendedUser[]>("/api/users/recommendations");
+};
+
 export const listFollowing = (): Promise<FollowUser[]> => {
   return apiGet<FollowUser[]>("/api/follows/following");
 };
